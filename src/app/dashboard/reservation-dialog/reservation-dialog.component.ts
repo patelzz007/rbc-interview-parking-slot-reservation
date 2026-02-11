@@ -17,6 +17,9 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatTimepickerModule } from '@angular/material/timepicker';
 import { Subject, takeUntil } from 'rxjs';
+import { MOCK_PARKING_LOTS } from '../../data/mock-parking-lots';
+import { MOCK_PARKING_SPACES } from '../../data/mock-parking-spaces';
+import { ParkingSpace } from '../../models/parking.models';
 
 export enum ReservationStatus {
   Pending = 'Pending',
@@ -49,6 +52,11 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private destroy$ = new Subject<void>();
 
+  // Mock data
+  parkingLots = MOCK_PARKING_LOTS;
+  allParkingSpaces = MOCK_PARKING_SPACES;
+  filteredSpaces: ParkingSpace[] = [];
+
   constructor(
     private dialogRef: MatDialogRef<ReservationDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
@@ -76,11 +84,57 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.setupDateTimeSync();
+    this.setupLotChangeListener();
+    
+    // If editing and lotId is already set, filter spaces
+    if (this.data?.lotId) {
+      this.filterSpacesByLot(this.data.lotId);
+    }
   }
 
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /**
+   * Sets up listener for lot selection changes to filter spaces
+   */
+  private setupLotChangeListener() {
+    this.form.get('lotId')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(lotId => {
+        if (lotId) {
+          this.filterSpacesByLot(lotId);
+          // Clear space selection when lot changes
+          this.form.patchValue({ spaceId: '' }, { emitEvent: false });
+        } else {
+          this.filteredSpaces = [];
+        }
+      });
+  }
+
+  /**
+   * Filters parking spaces by selected lot
+   */
+  private filterSpacesByLot(lotId: string) {
+    this.filteredSpaces = this.allParkingSpaces.filter(space => space.lotId === lotId);
+  }
+
+  /**
+   * Gets the display name for a parking lot
+   */
+  getLotName(lotId: string): string {
+    const lot = this.parkingLots.find(l => l.id === lotId);
+    return lot ? lot.name : lotId;
+  }
+
+  /**
+   * Gets the display name for a parking space
+   */
+  getSpaceName(spaceId: string): string {
+    const space = this.allParkingSpaces.find(s => s.id === spaceId);
+    return space ? `${space.spaceNumber} (Level ${space.level})` : spaceId;
   }
 
   /**

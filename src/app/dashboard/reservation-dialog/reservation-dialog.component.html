@@ -12,18 +12,29 @@
 
       <div class="grid grid-cols-2 gap-5">
         <mat-form-field appearance="outline" class="w-full">
-          <mat-label>User</mat-label>
-          <input matInput formControlName="userId" />
+          <mat-label>User ID</mat-label>
+          <input matInput formControlName="userId" placeholder="Enter user ID" />
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Lot</mat-label>
-          <input matInput formControlName="lotId" />
+          <mat-label>Parking Lot</mat-label>
+          <mat-select formControlName="lotId">
+            <mat-option *ngFor="let lot of parkingLots" [value]="lot.id">
+              {{ lot.name }} - {{ lot.address }}
+            </mat-option>
+          </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Space</mat-label>
-          <input matInput formControlName="spaceId" />
+          <mat-label>Parking Space</mat-label>
+          <mat-select formControlName="spaceId" [disabled]="!form.get('lotId')?.value">
+            <mat-option *ngIf="filteredSpaces.length === 0" disabled>
+              {{ form.get('lotId')?.value ? 'No spaces available' : 'Select a lot first' }}
+            </mat-option>
+            <mat-option *ngFor="let space of filteredSpaces" [value]="space.id">
+              {{ space.spaceNumber }} - Level {{ space.level }} ({{ space.type }})
+            </mat-option>
+          </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="w-full">
@@ -54,9 +65,7 @@
 
         <!-- CHECK IN TIME -->
         <mat-form-field appearance="outline">
-          <!-- <mat-label>Time</mat-label>
-    <input matInput type="time" formControlName="checkInTime" /> -->
-          <mat-label>Pick a time</mat-label>
+          <mat-label>Check in time</mat-label>
           <input matInput [matTimepicker]="checkInTimePicker" formControlName="checkInTime" />
           <mat-timepicker-toggle matIconSuffix [for]="checkInTimePicker" />
           <mat-timepicker #checkInTimePicker />
@@ -72,9 +81,7 @@
 
         <!-- CHECK OUT TIME -->
         <mat-form-field appearance="outline">
-          <!-- <mat-label>Time</mat-label>
-          <input matInput type="time" formControlName="checkOutTime" /> -->
-          <mat-label>Pick a time</mat-label>
+          <mat-label>Check out time</mat-label>
           <input matInput [matTimepicker]="checkOutTimePicker" formControlName="checkOutTime" />
           <mat-timepicker-toggle matIconSuffix [for]="checkOutTimePicker" />
           <mat-timepicker #checkOutTimePicker />
