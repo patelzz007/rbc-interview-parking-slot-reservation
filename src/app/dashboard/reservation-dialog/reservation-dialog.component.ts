@@ -19,7 +19,7 @@ import { MatTimepickerModule } from '@angular/material/timepicker';
 import { Subject, takeUntil } from 'rxjs';
 import { MOCK_PARKING_LOTS } from '../../data/mock-parking-lots';
 import { MOCK_PARKING_SPACES } from '../../data/mock-parking-spaces';
-import { ParkingSpace } from '../../models/parking.models';
+import { ParkingLot, ParkingSpace } from '../../models/parking.models';
 
 export enum ReservationStatus {
   Pending = 'Pending',
