@@ -1,0 +1,112 @@
+<h2 mat-dialog-title class="text-2xl font-semibold tracking-tight">
+  {{ data ? 'Edit reservation' : 'Create reservation' }}
+</h2>
+
+<mat-dialog-content class="mt-4">
+  <form [formGroup]="form" class="flex flex-col gap-8">
+    <!-- BASIC -->
+    <section class="flex flex-col gap-4">
+      <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">
+        Basic Information
+      </div>
+
+      <div class="grid grid-cols-2 gap-5">
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>User</mat-label>
+          <input matInput formControlName="userId" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Lot</mat-label>
+          <input matInput formControlName="lotId" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Space</mat-label>
+          <input matInput formControlName="spaceId" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            <mat-option *ngFor="let s of statuses" [value]="s">
+              {{ s }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </section>
+
+    <!-- TIME -->
+    <section class="flex flex-col gap-4">
+      <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">
+        Reservation Time
+      </div>
+
+      <div class="grid grid-cols-2 gap-5">
+        <!-- CHECK IN DATE -->
+        <mat-form-field appearance="outline">
+          <mat-label>Check in date</mat-label>
+          <input matInput [matDatepicker]="checkInPicker" formControlName="checkInDate" />
+          <mat-datepicker-toggle matSuffix [for]="checkInPicker"></mat-datepicker-toggle>
+          <mat-datepicker #checkInPicker></mat-datepicker>
+        </mat-form-field>
+
+        <!-- CHECK IN TIME -->
+        <mat-form-field appearance="outline">
+          <!-- <mat-label>Time</mat-label>
+    <input matInput type="time" formControlName="checkInTime" /> -->
+          <mat-label>Pick a time</mat-label>
+          <input matInput [matTimepicker]="checkInTimePicker" formControlName="checkInTime" />
+          <mat-timepicker-toggle matIconSuffix [for]="checkInTimePicker" />
+          <mat-timepicker #checkInTimePicker />
+        </mat-form-field>
+
+        <!-- CHECK OUT DATE -->
+        <mat-form-field appearance="outline">
+          <mat-label>Check out date</mat-label>
+          <input matInput [matDatepicker]="checkOutPicker" formControlName="checkOutDate" />
+          <mat-datepicker-toggle matSuffix [for]="checkOutPicker"></mat-datepicker-toggle>
+          <mat-datepicker #checkOutPicker></mat-datepicker>
+        </mat-form-field>
+
+        <!-- CHECK OUT TIME -->
+        <mat-form-field appearance="outline">
+          <!-- <mat-label>Time</mat-label>
+          <input matInput type="time" formControlName="checkOutTime" /> -->
+          <mat-label>Pick a time</mat-label>
+          <input matInput [matTimepicker]="checkOutTimePicker" formControlName="checkOutTime" />
+          <mat-timepicker-toggle matIconSuffix [for]="checkOutTimePicker" />
+          <mat-timepicker #checkOutTimePicker />
+        </mat-form-field>
+      </div>
+    </section>
+
+    <!-- PAYMENT -->
+    <section class="flex flex-col gap-4">
+      <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Payment</div>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Total cost</mat-label>
+        <input matInput type="number" formControlName="totalCost" />
+      </mat-form-field>
+    </section>
+
+    <!-- NOTES -->
+    <section class="flex flex-col gap-4">
+      <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">
+        Additional Notes
+      </div>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Special requirements</mat-label>
+        <textarea matInput rows="3" formControlName="specialRequirements"></textarea>
+      </mat-form-field>
+    </section>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions class="mt-6 border-t pt-4 flex justify-end gap-3">
+  <button mat-button (click)="close()">Cancel</button>
+  <button mat-flat-button color="primary" (click)="save()">Save reservation</button>
+</mat-dialog-actions>
