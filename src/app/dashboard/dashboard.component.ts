@@ -2,32 +2,48 @@ import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatTableModule } from '@angular/material/table';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatButtonModule } from '@angular/material/button';
-import { MockApiService } from '../services/mock-api.service';
-import { DatePipe } from '@angular/common';
+import { DatePipe, AsyncPipe } from '@angular/common';
 import { ReservationDialogComponent } from './reservation-dialog/reservation-dialog.component';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { filter, switchMap, startWith, tap } from 'rxjs/operators';
+import { MockApiObservableService } from '../services/mock-api-observable.service';
+import { BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [MatTableModule, MatMenuModule, MatButtonModule, DatePipe, MatDialogModule],
+  imports: [
+    MatTableModule,
+    MatMenuModule,
+    MatButtonModule,
+    DatePipe,
+    MatDialogModule,
+    AsyncPipe
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent {
-  constructor(private dialog: MatDialog) {}
+  private dialog = inject(MatDialog);
+  private api = inject(MockApiObservableService);
 
-  private readonly mockApiService = inject(MockApiService);
+  /** trigger reload after create/delete */
+  private refresh$ = new BehaviorSubject<void>(undefined);
 
-  // Get reservations using the mock API service
-  protected readonly reservations = this.mockApiService.getReservations();
+  /** reservations stream */
+protected reservations$ = this.refresh$.pipe(
+  startWith(undefined),
+  switchMap(() => this.api.getReservations()),
+  tap(res => {
+    console.log('📋 Reservations updated:', res);
+    console.log('📊 Total:', res.length);
+  })
+);
 
-  // Access reference data signals
-  protected readonly parkingLots = this.mockApiService.parkingLots;
-  protected readonly parkingSpaces = this.mockApiService.parkingSpaces;
-  protected readonly users = this.mockApiService.users;
+  /** reference data */
+  protected parkingLots$ = this.api.getParkingLots();
+  protected users$ = this.api.getUsers();
 
-  // Define columns for the table
   protected readonly displayedColumns = [
     'id',
     'userName',
@@ -40,28 +56,34 @@ export class DashboardComponent {
   ];
 
   openCreate() {
-    this.dialog.open(ReservationDialogComponent, {
-      width: '500px',
+    const dialogRef = this.dialog.open(ReservationDialogComponent, {
+      width: '600px',
+      maxWidth: '90vw',
       data: {},
+    });
+
+    dialogRef.afterClosed()
+      .pipe(filter(Boolean))
+      .subscribe(() => {
+        // reload table
+        this.refresh$.next();
+
+      });
+  }
+
+  deleteReservation(id: string) {
+    this.api.deleteReservation(id).subscribe(() => {
+      this.refresh$.next();
     });
   }
 
-  public deleteReservation(): void {
-    // Implement deletion logic here
-    console.log('Delete reservation clicked');
+  /** helper mapping */
+  protected getLotName(lotId: string, lots: any[]): string {
+    return lots.find(l => l.id === lotId)?.name || 'Unknown';
   }
 
-  // Helper methods to map IDs to display values
-  protected getLotName(lotId: string): string {
-    return this.parkingLots().find((lot) => lot.id === lotId)?.name || 'Unknown';
-  }
-
-  protected getSpaceNumber(spaceId: string): string {
-    return this.parkingSpaces().find((space) => space.id === spaceId)?.spaceNumber || 'Unknown';
-  }
-
-  protected getUserName(userId: string): string {
-    const user = this.users().find((u) => u.id === userId);
-    return user ? `${user.firstName} ${user.lastName}` : 'Unknown';
+  protected getUserName(userId: string, users: any[]): string {
+    const u = users.find(x => x.id === userId);
+    return u ? `${u.firstName} ${u.lastName}` : 'Unknown';
   }
 }

@@ -1,4 +1,5 @@
 import { Component, inject, Inject, OnInit, OnDestroy } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   MAT_DIALOG_DATA,
@@ -16,10 +17,12 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatTimepickerModule } from '@angular/material/timepicker';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, filter } from 'rxjs';
 import { MOCK_PARKING_LOTS } from '../../data/mock-parking-lots';
 import { MOCK_PARKING_SPACES } from '../../data/mock-parking-spaces';
 import { ParkingLot, ParkingSpace } from '../../models/parking.models';
+import { MockApiObservableService } from '../../services/mock-api-observable.service';
+import { MockApiService } from '../../services/mock-api.service';
 
 export enum ReservationStatus {
   Pending = 'Pending',
@@ -41,7 +44,7 @@ export enum ReservationStatus {
     ReactiveFormsModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatTimepickerModule
+    MatTimepickerModule,
   ],
   providers: [provideNativeDateAdapter()],
   selector: 'app-reservation-dialog',
@@ -50,12 +53,16 @@ export enum ReservationStatus {
 })
 export class ReservationDialogComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
+  private reservationService = inject(MockApiObservableService);
   private destroy$ = new Subject<void>();
 
   // Mock data
   parkingLots = MOCK_PARKING_LOTS;
   allParkingSpaces = MOCK_PARKING_SPACES;
   filteredSpaces: ParkingSpace[] = [];
+
+  // Loading state
+  isLoading = false;
 
   constructor(
     private dialogRef: MatDialogRef<ReservationDialogComponent>,
@@ -85,7 +92,7 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.setupDateTimeSync();
     this.setupLotChangeListener();
-    
+
     // If editing and lotId is already set, filter spaces
     if (this.data?.lotId) {
       this.filterSpacesByLot(this.data.lotId);
@@ -101,9 +108,10 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
    * Sets up listener for lot selection changes to filter spaces
    */
   private setupLotChangeListener() {
-    this.form.get('lotId')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(lotId => {
+    this.form
+      .get('lotId')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((lotId) => {
         if (lotId) {
           this.filterSpacesByLot(lotId);
           // Clear space selection when lot changes
@@ -118,14 +126,14 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
    * Filters parking spaces by selected lot
    */
   private filterSpacesByLot(lotId: string) {
-    this.filteredSpaces = this.allParkingSpaces.filter(space => space.lotId === lotId);
+    this.filteredSpaces = this.allParkingSpaces.filter((space) => space.lotId === lotId);
   }
 
   /**
    * Gets the display name for a parking lot
    */
   getLotName(lotId: string): string {
-    const lot = this.parkingLots.find(l => l.id === lotId);
+    const lot = this.parkingLots.find((l) => l.id === lotId);
     return lot ? lot.name : lotId;
   }
 
@@ -133,7 +141,7 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
    * Gets the display name for a parking space
    */
   getSpaceName(spaceId: string): string {
-    const space = this.allParkingSpaces.find(s => s.id === spaceId);
+    const space = this.allParkingSpaces.find((s) => s.id === spaceId);
     return space ? `${space.spaceNumber} (Level ${space.level})` : spaceId;
   }
 
@@ -144,9 +152,10 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
    */
   private setupDateTimeSync() {
     // When check-in DATE changes, update check-in TIME to use that date
-    this.form.get('checkInDate')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(date => {
+    this.form
+      .get('checkInDate')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((date) => {
         if (date) {
           const currentTime = this.form.get('checkInTime')?.value;
           if (currentTime) {
@@ -163,9 +172,10 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
       });
 
     // When check-in TIME changes, ensure it uses the check-in DATE
-    this.form.get('checkInTime')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(time => {
+    this.form
+      .get('checkInTime')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((time) => {
         if (time) {
           const selectedDate = this.form.get('checkInDate')?.value;
           if (selectedDate) {
@@ -179,9 +189,10 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
       });
 
     // When check-out DATE changes, update check-out TIME to use that date
-    this.form.get('checkOutDate')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(date => {
+    this.form
+      .get('checkOutDate')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((date) => {
         if (date) {
           const currentTime = this.form.get('checkOutTime')?.value;
           if (currentTime) {
@@ -198,9 +209,10 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
       });
 
     // When check-out TIME changes, ensure it uses the check-out DATE
-    this.form.get('checkOutTime')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(time => {
+    this.form
+      .get('checkOutTime')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((time) => {
         if (time) {
           const selectedDate = this.form.get('checkOutDate')?.value;
           if (selectedDate) {
@@ -241,34 +253,50 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
   }
 
   save() {
-    if (this.form.invalid) return;
-    
+    if (this.form.invalid) {
+      console.log('❌ Form is invalid');
+      return;
+    }
+
     const formValue = this.form.value;
-    
+
     // Combine date and time into epoch timestamps
     const checkInDateTime = this.convertToEpoch(
-      formValue.checkInDate ?? null, 
-      formValue.checkInTime ?? null
+      formValue.checkInDate ?? null,
+      formValue.checkInTime ?? null,
     );
     const checkOutDateTime = this.convertToEpoch(
-      formValue.checkOutDate ?? null, 
-      formValue.checkOutTime ?? null
+      formValue.checkOutDate ?? null,
+      formValue.checkOutTime ?? null,
     );
-    
+
+    // Validate timestamps
+    if (!checkInDateTime || !checkOutDateTime) {
+      console.error('❌ Invalid date/time values');
+      return;
+    }
+
     // Prepare the API payload
     const payload = {
-      userId: formValue.userId,
-      lotId: formValue.lotId,
-      spaceId: formValue.spaceId,
-      checkInDateTime: checkInDateTime,
-      checkOutDateTime: checkOutDateTime,
+      userId: formValue.userId!,
+      lotId: formValue.lotId!,
+      spaceId: formValue.spaceId!,
+      checkInDateTime: checkInDateTime.toString(),
+      checkOutDateTime: checkOutDateTime.toString(),
       status: formValue.status,
-      specialRequirements: formValue.specialRequirements,
-      totalCost: formValue.totalCost,
+      specialRequirements: formValue.specialRequirements || '',
+      totalCost: formValue.totalCost || 0,
     };
-    
-    console.log('API Payload:', payload);
-    this.dialogRef.close(payload);
+
+    console.log('📤 Saving reservation with payload:', payload);
+
+    // Set loading state
+    this.isLoading = true;
+
+    // Service returns Observable - subscribe directly
+    const created = this.reservationService.createReservation(payload);
+
+    this.dialogRef.close(created);
   }
 
   /**
@@ -279,7 +307,7 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
    */
   private convertToEpoch(date: Date | null, time: Date | null): number | null {
     if (!date || !time) return null;
-    
+
     const combined = this.combineDateAndTime(date, time);
     return combined.getTime(); // Returns epoch in milliseconds
   }
