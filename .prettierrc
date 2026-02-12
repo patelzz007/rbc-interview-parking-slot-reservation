@@ -1,0 +1,19 @@
+{
+	"tabWidth": 3,
+	"useTabs": true,
+	"singleQuote": false,
+	"semi": true,
+	"bracketSpacing": true,
+	"trailingComma": "es5",
+	"bracketSameLine": true,
+	"printWidth": 120,
+	"overrides": [
+		{
+			"files": "*.svg",
+			"options": {
+				"parser": "html",
+				"htmlWhitespaceSensitivity": "ignore"
+			}
+		}
+	]
+}

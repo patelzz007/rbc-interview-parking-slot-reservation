@@ -1,6 +1,18 @@
-import { Component, inject, Inject, OnInit, OnDestroy } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { Component, inject, Inject, OnDestroy, OnInit } from '@angular/core';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
+import {
+  MatNativeDateModule,
+  MatOptionModule,
+  provideNativeDateAdapter,
+} from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,
@@ -8,28 +20,26 @@ import {
   MatDialogRef,
 } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatOption, MatSelect } from '@angular/material/select';
-import { CommonModule } from '@angular/common';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatOptionModule } from '@angular/material/core';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatTimepickerModule } from '@angular/material/timepicker';
-import { Subject, takeUntil, filter } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 import { MOCK_PARKING_LOTS } from '../../data/mock-parking-lots';
 import { MOCK_PARKING_SPACES } from '../../data/mock-parking-spaces';
-import { ParkingLot, ParkingSpace, Reservation } from '../../models/parking.models';
+import {
+  CreateReservationDto,
+  ParkingLot,
+  ParkingSpace,
+  Reservation,
+  ReservationStatus,
+  UpdateReservationDto,
+} from '../../models/parking.models';
 import { MockApiObservableService } from '../../services/mock-api-observable.service';
 
-export enum ReservationStatus {
-  Pending = 'Pending',
-  Confirmed = 'Confirmed',
-  Cancelled = 'Cancelled',
-}
-
 @Component({
+  selector: 'app-reservation-dialog',
+  templateUrl: './reservation-dialog.component.html',
+  styleUrls: ['./reservation-dialog.component.scss'],
   imports: [
     CommonModule,
     MatFormFieldModule,
@@ -37,8 +47,6 @@ export enum ReservationStatus {
     MatInputModule,
     MatSelectModule,
     MatOptionModule,
-    MatSelect,
-    MatOption,
     MatDialogActions,
     ReactiveFormsModule,
     MatDatepickerModule,
@@ -46,55 +54,49 @@ export enum ReservationStatus {
     MatTimepickerModule,
   ],
   providers: [provideNativeDateAdapter()],
-  selector: 'app-reservation-dialog',
-  templateUrl: './reservation-dialog.component.html',
-  styleUrls: ['./reservation-dialog.component.scss'],
 })
 export class ReservationDialogComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private reservationService = inject(MockApiObservableService);
   private destroy$ = new Subject<void>();
 
-  // Mock data
-  public parkingLots = MOCK_PARKING_LOTS;
-  public allParkingSpaces = MOCK_PARKING_SPACES;
+  constructor(
+    private dialogRef: MatDialogRef<ReservationDialogComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) public data: Reservation | null,
+  ) {}
+
+  public parkingLots: ParkingLot[] = MOCK_PARKING_LOTS;
+  public allParkingSpaces: ParkingSpace[] = MOCK_PARKING_SPACES;
   public filteredSpaces: ParkingSpace[] = [];
 
-  // Loading state
   public isLoading = false;
-
-  constructor(
-    private dialogRef: MatDialogRef<ReservationDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any,
-  ) {
-    console.log('Dialog data:', data);
-    // if edit mode → patch values
-    if (data) this.form.patchValue(data);
-  }
 
   statuses = Object.values(ReservationStatus);
 
-  // Updated form with proper types - dates/times should be Date | null, not strings
-  form = this.fb.group({
-    userId: ['', Validators.required],
-    lotId: ['', Validators.required],
-    spaceId: ['', Validators.required],
-    checkInDate: [null as Date | null, Validators.required],
-    checkInTime: [null as Date | null, Validators.required],
-    checkOutDate: [null as Date | null, Validators.required],
-    checkOutTime: [null as Date | null, Validators.required],
-    status: [ReservationStatus.Pending, Validators.required],
-    specialRequirements: [''],
-    totalCost: [0, [Validators.required, Validators.min(0)]],
-  });
+  // ✅ typed form
+  form = this.fb.group(
+    {
+      userId: ['', Validators.required],
+      lotId: ['', Validators.required],
+      spaceId: ['', Validators.required],
+      checkInDate: [null as Date | null, Validators.required],
+      checkInTime: [null as Date | null, Validators.required],
+      checkOutDate: [null as Date | null, Validators.required],
+      checkOutTime: [null as Date | null, Validators.required],
+      status: [ReservationStatus.PENDING, Validators.required],
+      specialRequirements: [''],
+      totalCost: [0, [Validators.required, Validators.min(0)]],
+    },
+    { validators: this.dateRangeValidator.bind(this) },
+  );
 
+  // ================= INIT =================
   ngOnInit() {
-    this.setupDateTimeSync();
     this.setupLotChangeListener();
+    this.setupDateTimeSync();
 
-    // If editing and lotId is already set, filter spaces
-    if (this.data?.lotId) {
-      this.filterSpacesByLot(this.data.lotId);
+    if (this.data) {
+      this.patchForEdit(this.data);
     }
   }
 
@@ -103,239 +105,201 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  /**
-   * Sets up listener for lot selection changes to filter spaces
-   */
+  public endDateFilter = (date: Date | null): boolean => {
+    const start = this.form.get('checkInDate')?.value;
+    if (!start || !date) return true;
+
+    const min = new Date(start);
+    min.setDate(min.getDate() - 1);
+
+    return date > min;
+  };
+
+  public save(): void {
+    if (this.form.invalid) {
+      console.log(this.form.value);
+      this.form.markAllAsTouched(); // ⭐ MAGIC LINE
+      return;
+    }
+
+    const v = this.form.value;
+
+    const checkIn = this.combineDateAndTime(v.checkInDate!, v.checkInTime!);
+    const checkOut = this.combineDateAndTime(v.checkOutDate!, v.checkOutTime!);
+
+    this.isLoading = true;
+
+    if (this.data?.id) {
+      const payload: UpdateReservationDto = {
+        userId: v.userId!,
+        lotId: v.lotId!,
+        spaceId: v.spaceId!,
+        checkInDateTime: checkIn.getTime().toString(),
+        checkOutDateTime: checkOut.getTime().toString(),
+        specialRequirements: v.specialRequirements || '',
+        status: v.status!,
+      };
+
+      this.reservationService.updateReservation(this.data.id, payload).subscribe(() => {
+        this.dialogRef.close(true);
+      });
+    } else {
+      const payload: CreateReservationDto = {
+        userId: v.userId!,
+        lotId: v.lotId!,
+        spaceId: v.spaceId!,
+        checkInDateTime: checkIn.getTime().toString(),
+        checkOutDateTime: checkOut.getTime().toString(),
+        specialRequirements: v.specialRequirements || '',
+      };
+
+      this.reservationService.createReservation(payload).subscribe(() => {
+        this.dialogRef.close(true);
+      });
+    }
+  }
+
+  public close() {
+    this.dialogRef.close();
+  }
+
+  // ================= PATCH =================
+  private patchForEdit(reservation: Reservation) {
+    const checkIn = new Date(Number(reservation.checkInDateTime));
+    const checkOut = new Date(Number(reservation.checkOutDateTime));
+
+    this.form.patchValue({
+      userId: reservation.userId,
+      lotId: reservation.lotId,
+      spaceId: reservation.spaceId,
+      checkInDate: checkIn,
+      checkInTime: checkIn,
+      checkOutDate: checkOut,
+      checkOutTime: checkOut,
+      status: reservation.status,
+      specialRequirements: reservation.specialRequirements,
+      totalCost: reservation.totalCost,
+    });
+
+    this.filterSpacesByLot(reservation.lotId);
+  }
+
+  // ================= VALIDATOR =================
+  private dateRangeValidator(group: AbstractControl): ValidationErrors | null {
+    const inDate = group.get('checkInDate');
+    const inTime = group.get('checkInTime');
+    const outDate = group.get('checkOutDate');
+    const outTime = group.get('checkOutTime');
+
+    if (!inDate?.value || !inTime?.value || !outDate?.value || !outTime?.value) {
+      return null;
+    }
+
+    const start = this.combineDateAndTime(inDate.value, inTime.value);
+    const end = this.combineDateAndTime(outDate.value, outTime.value);
+
+    const invalid = end.getTime() <= start.getTime();
+
+    // ⭐ CLEAR OLD ERRORS FIRST
+    [outDate, outTime].forEach((c) => {
+      if (c?.hasError('invalidDateRange')) {
+        const e = { ...c.errors };
+        delete e['invalidDateRange'];
+        c.setErrors(Object.keys(e).length ? e : null);
+      }
+    });
+
+    if (!invalid) return null;
+
+    // ⭐ ADD ERROR TO CONTROLS
+    outDate?.setErrors({ ...(outDate.errors || {}), invalidDateRange: true });
+    outTime?.setErrors({ ...(outTime.errors || {}), invalidDateRange: true });
+
+    return { invalidDateRange: true };
+  }
+
+  // ================= DATE FILTER =================
+
+  // ================= LOT =================
   private setupLotChangeListener() {
     this.form
       .get('lotId')
       ?.valueChanges.pipe(takeUntil(this.destroy$))
       .subscribe((lotId) => {
-        if (lotId) {
-          this.filterSpacesByLot(lotId);
-          // Clear space selection when lot changes
-          this.form.patchValue({ spaceId: '' }, { emitEvent: false });
-        } else {
+        if (!lotId) {
           this.filteredSpaces = [];
+          return;
         }
+        this.filterSpacesByLot(lotId);
+        this.form.patchValue({ spaceId: '' }, { emitEvent: false });
       });
   }
 
-  /**
-   * Filters parking spaces by selected lot
-   */
   private filterSpacesByLot(lotId: string) {
-    this.filteredSpaces = this.allParkingSpaces.filter((space) => space.lotId === lotId);
+    this.filteredSpaces = this.allParkingSpaces.filter((s) => s.lotId === lotId);
   }
 
-  /**
-   * Gets the display name for a parking lot
-   */
-  getLotName(lotId: string): string {
-    const lot = this.parkingLots.find((l) => l.id === lotId);
-    return lot ? lot.name : lotId;
-  }
-
-  /**
-   * Gets the display name for a parking space
-   */
-  getSpaceName(spaceId: string): string {
-    const space = this.allParkingSpaces.find((s) => s.id === spaceId);
-    return space ? `${space.spaceNumber} (Level ${space.level})` : spaceId;
-  }
-
-  /**
-   * Synchronizes date and time fields so that:
-   * - When a date is selected, the time uses that date
-   * - When a time is selected, it uses the corresponding date
-   */
+  // ================= SYNC =================
   private setupDateTimeSync() {
-    // When check-in DATE changes, update check-in TIME to use that date
-    this.form
-      .get('checkInDate')
-      ?.valueChanges.pipe(takeUntil(this.destroy$))
-      .subscribe((date) => {
-        if (date) {
-          const currentTime = this.form.get('checkInTime')?.value;
-          if (currentTime) {
-            // Preserve the hours/minutes but use the new date
-            const updatedDateTime = this.combineDateAndTime(date, currentTime);
-            this.form.patchValue({ checkInTime: updatedDateTime }, { emitEvent: false });
-          } else {
-            // Set default time (9:00 AM) on the selected date
-            const defaultDateTime = new Date(date);
-            defaultDateTime.setHours(9, 0, 0, 0);
-            this.form.patchValue({ checkInTime: defaultDateTime }, { emitEvent: false });
-          }
-        }
-      });
+    this.sync('checkInDate', 'checkInTime', 9);
+    this.sync('checkOutDate', 'checkOutTime', 17);
+  }
 
-    // When check-in TIME changes, ensure it uses the check-in DATE
+  private sync(dateKey: string, timeKey: string, defaultHour: number) {
     this.form
-      .get('checkInTime')
+      .get(dateKey)
       ?.valueChanges.pipe(takeUntil(this.destroy$))
-      .subscribe((time) => {
+      .subscribe((date: Date | null) => {
+        if (!date) return;
+
+        const time = this.form.get(timeKey)?.value;
+
         if (time) {
-          const selectedDate = this.form.get('checkInDate')?.value;
-          if (selectedDate) {
-            const correctedDateTime = this.combineDateAndTime(selectedDate, time);
-            // Only update if the dates don't match
-            if (this.getDaysDifference(time, correctedDateTime) !== 0) {
-              this.form.patchValue({ checkInTime: correctedDateTime }, { emitEvent: false });
-            }
-          }
-        }
-      });
-
-    // When check-out DATE changes, update check-out TIME to use that date
-    this.form
-      .get('checkOutDate')
-      ?.valueChanges.pipe(takeUntil(this.destroy$))
-      .subscribe((date) => {
-        if (date) {
-          const currentTime = this.form.get('checkOutTime')?.value;
-          if (currentTime) {
-            // Preserve the hours/minutes but use the new date
-            const updatedDateTime = this.combineDateAndTime(date, currentTime);
-            this.form.patchValue({ checkOutTime: updatedDateTime }, { emitEvent: false });
-          } else {
-            // Set default time (5:00 PM) on the selected date
-            const defaultDateTime = new Date(date);
-            defaultDateTime.setHours(17, 0, 0, 0);
-            this.form.patchValue({ checkOutTime: defaultDateTime }, { emitEvent: false });
-          }
-        }
-      });
-
-    // When check-out TIME changes, ensure it uses the check-out DATE
-    this.form
-      .get('checkOutTime')
-      ?.valueChanges.pipe(takeUntil(this.destroy$))
-      .subscribe((time) => {
-        if (time) {
-          const selectedDate = this.form.get('checkOutDate')?.value;
-          if (selectedDate) {
-            const correctedDateTime = this.combineDateAndTime(selectedDate, time);
-            // Only update if the dates don't match
-            if (this.getDaysDifference(time, correctedDateTime) !== 0) {
-              this.form.patchValue({ checkOutTime: correctedDateTime }, { emitEvent: false });
-            }
-          }
+          this.form.patchValue(
+            { [timeKey]: this.combineDateAndTime(date, time) },
+            { emitEvent: false },
+          );
+        } else {
+          const d = new Date(date);
+          d.setHours(defaultHour, 0, 0, 0);
+          this.form.patchValue({ [timeKey]: d }, { emitEvent: false });
         }
       });
   }
 
-  /**
-   * Combines a date with a time, preserving hours/minutes from time
-   * @param date The date to use
-   * @param time The time to extract hours/minutes from
-   * @returns A new Date object with the combined date and time
-   */
   private combineDateAndTime(date: Date, time: Date): Date {
-    const combined = new Date(date);
-    combined.setHours(time.getHours());
-    combined.setMinutes(time.getMinutes());
-    combined.setSeconds(0);
-    combined.setMilliseconds(0);
-    return combined;
+    const d = new Date(date);
+    d.setHours(time.getHours(), time.getMinutes(), 0, 0);
+    return d;
   }
 
-  /**
-   * Gets the difference in days between two dates
-   */
-  private getDaysDifference(date1: Date, date2: Date): number {
-    const d1 = new Date(date1);
-    const d2 = new Date(date2);
-    d1.setHours(0, 0, 0, 0);
-    d2.setHours(0, 0, 0, 0);
-    return Math.floor((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+  // ================= TIME MIN =================
+  private getNow(): Date {
+    const now = new Date();
+    now.setSeconds(0, 0);
+    return now;
   }
 
-  public save(): void {
-    if (this.form.invalid) {
-      console.log('❌ Form is invalid');
-      return;
-    }
+  private isToday(date: Date | null | undefined): boolean {
+    if (!date) return false;
 
-    const formValue = this.form.value;
-
-    // Combine date and time into epoch timestamps
-    const checkInDateTime = this.convertToEpoch(
-      formValue.checkInDate ?? null,
-      formValue.checkInTime ?? null,
+    const today = new Date();
+    return (
+      date.getFullYear() === today.getFullYear() &&
+      date.getMonth() === today.getMonth() &&
+      date.getDate() === today.getDate()
     );
-    const checkOutDateTime = this.convertToEpoch(
-      formValue.checkOutDate ?? null,
-      formValue.checkOutTime ?? null,
-    );
-
-    // Validate timestamps
-    if (!checkInDateTime || !checkOutDateTime) {
-      console.error('❌ Invalid date/time values');
-      return;
-    }
-
-    // Prepare the API payload
-    const payload = {
-      userId: formValue.userId!,
-      lotId: formValue.lotId!,
-      spaceId: formValue.spaceId!,
-      checkInDateTime: checkInDateTime.toString(),
-      checkOutDateTime: checkOutDateTime.toString(),
-      status: formValue.status,
-      specialRequirements: formValue.specialRequirements || '',
-      totalCost: formValue.totalCost || 0,
-    };
-
-    const updatePayload = {
-      userId: formValue.userId!,
-      lotId: formValue.lotId!,
-      spaceId: formValue.spaceId!,
-      checkInDateTime: checkInDateTime.toString(),
-      checkOutDateTime: checkOutDateTime.toString(),
-      specialRequirements: formValue.specialRequirements || '',
-    };
-
-    console.log('📤 Saving reservation with payload:', payload);
-
-    // Set loading state
-    this.isLoading = true;
-
-    // Service returns Observable - subscribe directly
-    // const created = this.reservationService.createReservation(payload);
-
-    // this.dialogRef.close(created);
-
-    // ✨ EDIT
-    if (this.data?.id) {
-      this.reservationService.updateReservation(this.data.id, updatePayload).subscribe(() => {
-        console.log('✏️ Updated');
-        this.dialogRef.close(true);
-      });
-    }
-    // ✨ CREATE
-    else {
-      this.reservationService.createReservation(payload).subscribe(() => {
-        console.log('✅ Created');
-        this.dialogRef.close(true);
-      });
-    }
   }
 
-  /**
-   * Converts date and time to epoch timestamp (milliseconds)
-   * @param date The date value
-   * @param time The time value
-   * @returns Epoch timestamp in milliseconds, or null if either value is missing
-   */
-  private convertToEpoch(date: Date | null, time: Date | null): number | null {
-    if (!date || !time) return null;
-
-    const combined = this.combineDateAndTime(date, time);
-    return combined.getTime(); // Returns epoch in milliseconds
+  get checkInMinTime(): Date | null {
+    const date = this.form.get('checkInDate')?.value;
+    return this.isToday(date) ? this.getNow() : null;
   }
 
-  close() {
-    this.dialogRef.close();
+  get checkOutMinTime(): Date | null {
+    const date = this.form.get('checkOutDate')?.value;
+    return this.isToday(date) ? this.getNow() : null;
   }
+
+  // ================= SAVE =================
 }

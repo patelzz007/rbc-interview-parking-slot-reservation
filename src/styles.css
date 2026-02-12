@@ -3,5 +3,5 @@
 @import "tailwindcss";
 
 .mat-mdc-form-field {
-  --mdc-outlined-text-field-container-shape: 12px;
+	--mdc-outlined-text-field-container-shape: 12px;
 }
