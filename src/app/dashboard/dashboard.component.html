@@ -76,7 +76,7 @@
             <td mat-cell *matCellDef="let r">
               <button mat-button [matMenuTriggerFor]="menu">Actions</button>
               <mat-menu #menu="matMenu">
-                <button mat-menu-item>Edit</button>
+                <button mat-menu-item (click)="openEdit(r)">Edit</button>
                 <button mat-menu-item (click)="deleteReservation(r.id)">Delete</button>
               </mat-menu>
             </td>

@@ -20,9 +20,8 @@ import { MatTimepickerModule } from '@angular/material/timepicker';
 import { Subject, takeUntil, filter } from 'rxjs';
 import { MOCK_PARKING_LOTS } from '../../data/mock-parking-lots';
 import { MOCK_PARKING_SPACES } from '../../data/mock-parking-spaces';
-import { ParkingLot, ParkingSpace } from '../../models/parking.models';
+import { ParkingLot, ParkingSpace, Reservation } from '../../models/parking.models';
 import { MockApiObservableService } from '../../services/mock-api-observable.service';
-import { MockApiService } from '../../services/mock-api.service';
 
 export enum ReservationStatus {
   Pending = 'Pending',
@@ -57,12 +56,12 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   // Mock data
-  parkingLots = MOCK_PARKING_LOTS;
-  allParkingSpaces = MOCK_PARKING_SPACES;
-  filteredSpaces: ParkingSpace[] = [];
+  public parkingLots = MOCK_PARKING_LOTS;
+  public allParkingSpaces = MOCK_PARKING_SPACES;
+  public filteredSpaces: ParkingSpace[] = [];
 
   // Loading state
-  isLoading = false;
+  public isLoading = false;
 
   constructor(
     private dialogRef: MatDialogRef<ReservationDialogComponent>,
@@ -252,7 +251,7 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
     return Math.floor((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
   }
 
-  save() {
+  public save(): void {
     if (this.form.invalid) {
       console.log('❌ Form is invalid');
       return;
@@ -288,15 +287,39 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
       totalCost: formValue.totalCost || 0,
     };
 
+    const updatePayload = {
+      userId: formValue.userId!,
+      lotId: formValue.lotId!,
+      spaceId: formValue.spaceId!,
+      checkInDateTime: checkInDateTime.toString(),
+      checkOutDateTime: checkOutDateTime.toString(),
+      specialRequirements: formValue.specialRequirements || '',
+    };
+
     console.log('📤 Saving reservation with payload:', payload);
 
     // Set loading state
     this.isLoading = true;
 
     // Service returns Observable - subscribe directly
-    const created = this.reservationService.createReservation(payload);
+    // const created = this.reservationService.createReservation(payload);
 
-    this.dialogRef.close(created);
+    // this.dialogRef.close(created);
+
+    // ✨ EDIT
+    if (this.data?.id) {
+      this.reservationService.updateReservation(this.data.id, updatePayload).subscribe(() => {
+        console.log('✏️ Updated');
+        this.dialogRef.close(true);
+      });
+    }
+    // ✨ CREATE
+    else {
+      this.reservationService.createReservation(payload).subscribe(() => {
+        console.log('✅ Created');
+        this.dialogRef.close(true);
+      });
+    }
   }
 
   /**
