@@ -1,165 +1,370 @@
-<div class="container">
-	<!-- Header -->
-	<div class="flex-row justify-between items-center mb-4 header-container">
-		<h1 class="m-0 p-0">Parking Lot Reservations</h1>
-		<button
-			(click)="openCreate()"
-			type="button"
-			class="rounded-md! bg-indigo-600! px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 create-btn"
-			[disabled]="isLoading()">
-			{{ isLoading() ? "Loading..." : "Create" }}
-		</button>
+<div class="dashboard">
+	<!-- Header Section -->
+	<div class="dashboard-header">
+		<div class="header-left">
+			<h1>Parking Lot Reservations</h1>
+			<p class="subtitle">Manage and monitor all parking reservations</p>
+		</div>
+		<div class="header-right">
+			<button (click)="openCreate()" class="create-btn" [disabled]="isLoading()">
+				<mat-icon>add</mat-icon>
+				<span>{{ isLoading() ? "Loading..." : "New Reservation" }}</span>
+			</button>
+		</div>
 	</div>
 
-	<!-- Loading Indicator -->
+	<!-- Global Loading Overlay (replaces inline spinner) -->
 	@if (isLoading()) {
-		<div class="loading-state">
-			<mat-spinner diameter="40"></mat-spinner>
-			<p>Loading parking lots and users...</p>
+		<div class="global-loading-overlay">
+			<div class="loading-content">
+				<mat-spinner diameter="48"></mat-spinner>
+				<div class="loading-text">
+					<h3>Loading Dashboard</h3>
+					<p>Fetching parking lots and users...</p>
+				</div>
+			</div>
 		</div>
 	}
 
-	<!-- Filters / Search -->
-	<div class="filters-container" [class.disabled]="isLoading()">
-		<!-- Search -->
-		<mat-form-field appearance="outline" class="filter-item search-field">
-			<mat-label>Search</mat-label>
-			<input matInput (input)="onSearchInput($any($event.target).value)" placeholder="ID, User, Lot" [disabled]="isLoading()" />
-		</mat-form-field>
-
-		<!-- Status Filter -->
-		<mat-form-field appearance="outline" class="filter-item">
-			<mat-label>Status</mat-label>
-			<mat-select (selectionChange)="statusFilter$.next($event.value)" [disabled]="isLoading()">
-				<mat-option [value]="null">All</mat-option>
-				<mat-option value="ACTIVE">ACTIVE</mat-option>
-				<mat-option value="COMPLETED">COMPLETED</mat-option>
-				<mat-option value="CANCELLED">CANCELLED</mat-option>
-			</mat-select>
-		</mat-form-field>
-
-		<!-- Lot Filter -->
-		<mat-form-field appearance="outline" class="filter-item">
-			<mat-label>Lot</mat-label>
-			<mat-select (selectionChange)="lotFilter$.next($event.value)" [disabled]="isLoading()">
-				<mat-option [value]="null">All</mat-option>
-				@if (parkingLots$ | async; as lots) {
-					@for (l of lots; track l.id) {
-						<mat-option [value]="l.id">{{ l.name }}</mat-option>
-					}
+	<!-- Main Content Card -->
+	<div class="content-card" [class.loading]="isLoading()">
+		<!-- Filters Section -->
+		<div class="filters-section">
+			<div class="filters-header">
+				<div class="filters-title">
+					<mat-icon>filter_list</mat-icon>
+					<span>Filters</span>
+				</div>
+				@if (hasActiveFilters()) {
+					<button class="clear-filters-btn" (click)="clearAllFilters()">
+						<mat-icon>close</mat-icon>
+						Clear all
+					</button>
 				}
-			</mat-select>
-		</mat-form-field>
+			</div>
 
-		<!-- User Filter -->
-		<mat-form-field appearance="outline" class="filter-item">
-			<mat-label>User</mat-label>
-			<mat-select (selectionChange)="userFilter$.next($event.value)" [disabled]="isLoading()">
-				<mat-option [value]="null">All</mat-option>
-				@if (users$ | async; as users) {
-					@for (u of users; track u.id) {
-						<mat-option [value]="u.id">{{ u.firstName }} {{ u.lastName }}</mat-option>
+			<div class="filters-grid">
+				<!-- Search Field -->
+				<mat-form-field appearance="outline" class="search-field">
+					<mat-label>Search</mat-label>
+					<mat-icon matPrefix>search</mat-icon>
+					<input
+						matInput
+						(input)="onSearchInput($any($event.target).value)"
+						[value]="searchInput$.getValue()"
+						placeholder="Search by ID, user, or lot..."
+						[disabled]="isLoading()" />
+					@if (searchInput$.getValue()) {
+						<button matSuffix mat-icon-button aria-label="Clear" (click)="clearSearch()" class="clear-btn">
+							<mat-icon>close</mat-icon>
+						</button>
 					}
-				}
-			</mat-select>
-		</mat-form-field>
-	</div>
+				</mat-form-field>
 
-	<!-- Table Container -->
-	<div class="table-container mat-elevation-z8">
-		<table
-			mat-table
-			[dataSource]="dataSource"
-			class="responsive-table"
-			matSort
-			matSortActive="checkInDateTime"
-			matSortDirection="desc"
-			(matSortChange)="handleSortChange($event)">
-			<!-- ID Column -->
-			<ng-container matColumnDef="id">
-				<th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
-				<td mat-cell *matCellDef="let r" data-label="ID">{{ r.id.slice(0, 8) }}...</td>
-			</ng-container>
+				<!-- Status Filter - Searchable -->
+				<mat-form-field appearance="outline" class="filter-field">
+					<mat-label>Status</mat-label>
+					<mat-icon matPrefix>circle</mat-icon>
+					<mat-select [formControl]="statusControl" [disabled]="isLoading()" panelClass="searchable-dropdown">
+						<mat-option>
+							<ngx-mat-select-search
+								[formControl]="statusSearchControl"
+								placeholderLabel="Search status..."
+								noEntriesFoundLabel="No status found"
+								(keydown)="$event.stopPropagation()">
+								<mat-icon ngxMatSelectSearchIcon>search</mat-icon>
+							</ngx-mat-select-search>
+						</mat-option>
+						<mat-option [value]="null">All Statuses</mat-option>
+						@for (status of filteredStatuses$ | async; track status.value) {
+							<mat-option [value]="status.value">
+								<span class="status-option" [ngClass]="status.value.toLowerCase()">
+									{{ status.label }}
+								</span>
+							</mat-option>
+						}
+					</mat-select>
+				</mat-form-field>
 
-			<!-- User Column -->
-			<ng-container matColumnDef="userName">
-				<th mat-header-cell *matHeaderCellDef mat-sort-header>User Name</th>
-				<td mat-cell *matCellDef="let r" data-label="User Name">
-					@if (userNameMap$ | async; as userMap) {
-						{{ userMap.get(r.userId) || "Loading..." }}
-					} @else {
-						Loading...
-					}
-				</td>
-			</ng-container>
+				<!-- Lot Filter - Searchable -->
+				<mat-form-field appearance="outline" class="filter-field">
+					<mat-label>Parking Lot</mat-label>
+					<mat-icon matPrefix>local_parking</mat-icon>
+					<mat-select [formControl]="lotControl" [disabled]="isLoading()" panelClass="searchable-dropdown">
+						<mat-option>
+							<ngx-mat-select-search
+								[formControl]="lotSearchControl"
+								placeholderLabel="Search lots..."
+								noEntriesFoundLabel="No lots found"
+								(keydown)="$event.stopPropagation()">
+								<mat-icon ngxMatSelectSearchIcon>search</mat-icon>
+							</ngx-mat-select-search>
+						</mat-option>
+						<mat-option [value]="null">All Lots</mat-option>
+						@for (lot of filteredLots$ | async; track lot.id) {
+							<mat-option [value]="lot.id">
+								<span class="lot-option">
+									<span class="lot-name">{{ lot.name }}</span>
+								</span>
+							</mat-option>
+						}
+					</mat-select>
+				</mat-form-field>
 
-			<!-- Lot Column -->
-			<ng-container matColumnDef="lotName">
-				<th mat-header-cell *matHeaderCellDef mat-sort-header>Lot Name</th>
-				<td mat-cell *matCellDef="let r" data-label="Lot Name">
-					@if (lotNameMap$ | async; as lotMap) {
-						{{ lotMap.get(r.lotId) || "Loading..." }}
-					} @else {
-						Loading...
-					}
-				</td>
-			</ng-container>
+				<!-- User Filter - Searchable -->
+				<mat-form-field appearance="outline" class="filter-field">
+					<mat-label>User</mat-label>
+					<mat-icon matPrefix>person</mat-icon>
+					<mat-select [formControl]="userControl" [disabled]="isLoading()" panelClass="searchable-dropdown">
+						<mat-option>
+							<ngx-mat-select-search
+								[formControl]="userSearchControl"
+								placeholderLabel="Search users..."
+								noEntriesFoundLabel="No users found"
+								(keydown)="$event.stopPropagation()">
+								<mat-icon ngxMatSelectSearchIcon>search</mat-icon>
+							</ngx-mat-select-search>
+						</mat-option>
+						<mat-option [value]="null">All Users</mat-option>
+						@for (user of filteredUsers$ | async; track user.id) {
+							<mat-option [value]="user.id">
+								<span class="user-option">
+									<span class="user-avatar">{{ getInitials(user) }}</span>
+									<span class="user-info">
+										<span class="user-name">{{ user.firstName }} {{ user.lastName }}</span>
+										<span class="user-email">{{ user.email }}</span>
+									</span>
+								</span>
+							</mat-option>
+						}
+					</mat-select>
+				</mat-form-field>
+			</div>
 
-			<!-- Space Column -->
-			<ng-container matColumnDef="spaceNumber">
-				<th mat-header-cell *matHeaderCellDef mat-sort-header>Space</th>
-				<td mat-cell *matCellDef="let r" data-label="Space">{{ r.spaceId }}</td>
-			</ng-container>
-
-			<!-- Check In -->
-			<ng-container matColumnDef="checkInDateTime">
-				<th mat-header-cell *matHeaderCellDef mat-sort-header>Check In</th>
-				<td mat-cell *matCellDef="let r" data-label="Check In">{{ r.checkInDateTime | date: "short" }}</td>
-			</ng-container>
-
-			<!-- Check Out -->
-			<ng-container matColumnDef="checkOutDateTime">
-				<th mat-header-cell *matHeaderCellDef mat-sort-header>Check Out</th>
-				<td mat-cell *matCellDef="let r" data-label="Check Out">{{ r.checkOutDateTime | date: "short" }}</td>
-			</ng-container>
-
-			<!-- Status -->
-			<ng-container matColumnDef="status">
-				<th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
-				<td mat-cell *matCellDef="let r" data-label="Status">
-					<span class="status-badge" [ngClass]="r.status.toLowerCase()">{{ r.status }}</span>
-				</td>
-			</ng-container>
-
-			<!-- Actions -->
-			<ng-container matColumnDef="actions">
-				<th mat-header-cell *matHeaderCellDef>Actions</th>
-				<td mat-cell *matCellDef="let r" data-label="Actions">
-					<button mat-button [matMenuTriggerFor]="menu" class="actions-btn" [disabled]="isLoading()">Actions</button>
-					<mat-menu #menu="matMenu">
-						<button mat-menu-item (click)="openEdit(r)" [disabled]="isLoading()">Edit</button>
-						<button mat-menu-item (click)="deleteReservation(r.id)" [disabled]="isLoading()">Delete</button>
-					</mat-menu>
-				</td>
-			</ng-container>
-
-			<!-- Header & Rows -->
-			<tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-			<tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-
-			<!-- Empty State -->
-			@if (dataSource.filteredData.length === 0 && !isLoading()) {
-				<tr class="mat-row">
-					<td [attr.colspan]="displayedColumns.length" class="empty-state-cell">
-						<div class="empty-state">
-							<p>No reservations found</p>
-						</div>
-					</td>
-				</tr>
+			<!-- Active Filters Tags -->
+			@if (hasActiveFilters()) {
+				<div class="active-filters">
+					<span class="active-filters-label">Active filters:</span>
+					<div class="filter-tags">
+						@if (searchInput$.getValue()) {
+							<span class="filter-tag">
+								<span>Search: "{{ searchInput$.getValue() }}"</span>
+								<button (click)="clearSearch()">
+									<mat-icon>close</mat-icon>
+								</button>
+							</span>
+						}
+						@if (statusControl.value) {
+							<span class="filter-tag">
+								<span>Status: {{ getStatusLabel(statusControl.value) }}</span>
+								<button (click)="statusControl.setValue(null); statusFilter$.next(null)">
+									<mat-icon>close</mat-icon>
+								</button>
+							</span>
+						}
+						@if (lotControl.value) {
+							<span class="filter-tag">
+								<span>Lot: {{ getLotNameSync(lotControl.value) }}</span>
+								<button (click)="lotControl.setValue(null); lotFilter$.next(null)">
+									<mat-icon>close</mat-icon>
+								</button>
+							</span>
+						}
+						@if (userControl.value) {
+							<span class="filter-tag">
+								<span>User: {{ getUserNameSync(userControl.value) }}</span>
+								<button (click)="userControl.setValue(null); userFilter$.next(null)">
+									<mat-icon>close</mat-icon>
+								</button>
+							</span>
+						}
+					</div>
+				</div>
 			}
-		</table>
-	</div>
+		</div>
 
-	<!-- Paginator -->
-	<mat-paginator [pageSize]="10" [pageSizeOptions]="[5, 10, 20, 50]" showFirstLastButtons class="responsive-paginator" [disabled]="isLoading()"></mat-paginator>
+		<!-- Results Header -->
+		<div class="results-header">
+			<div class="results-count">
+				<mat-icon>table_rows</mat-icon>
+				<span>
+					{{ totalItems }}
+					{{ totalItems === 1 ? "reservation" : "reservations" }}
+					found
+				</span>
+			</div>
+			<div class="table-controls">
+				<button mat-icon-button [matMenuTriggerFor]="columnsMenu" class="columns-btn">
+					<mat-icon>view_column</mat-icon>
+				</button>
+				<mat-menu #columnsMenu="matMenu" xPosition="before">
+					<div class="columns-menu-header">
+						<span>Show/Hide Columns</span>
+					</div>
+					@for (column of allColumns; track column) {
+						@if (column !== "actions") {
+							<button mat-menu-item (click)="toggleColumn(column)">
+								<mat-icon>
+									{{ visibleColumns.includes(column) ? "check_box" : "check_box_outline_blank" }}
+								</mat-icon>
+								<span>{{ getColumnLabel(column) }}</span>
+							</button>
+						}
+					}
+				</mat-menu>
+			</div>
+		</div>
+
+		<!-- Table Container -->
+		<div class="table-container">
+			@if (totalItems === 0 && !isLoading()) {
+				<div class="empty-state">
+					<div class="empty-state-icon">
+						<mat-icon>local_parking</mat-icon>
+					</div>
+					<h3>No reservations found</h3>
+					<p>Try adjusting your filters or create a new reservation</p>
+					<button mat-raised-button color="primary" (click)="openCreate()">
+						<mat-icon>add</mat-icon>
+						New Reservation
+					</button>
+				</div>
+			} @else {
+				<table
+					mat-table
+					[dataSource]="dataSource"
+					matSort
+					matSortActive="checkInDateTime"
+					matSortDirection="desc"
+					(matSortChange)="handleSortChange($event)"
+					class="reservation-table">
+					<!-- ID Column -->
+					<ng-container matColumnDef="id">
+						<th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
+						<td mat-cell *matCellDef="let r" data-label="ID">
+							<span class="id-badge">{{ r.id.slice(0, 8) }}</span>
+						</td>
+					</ng-container>
+
+					<!-- User Column -->
+					<ng-container matColumnDef="userName">
+						<th mat-header-cell *matHeaderCellDef mat-sort-header>User</th>
+						<td mat-cell *matCellDef="let r" data-label="User">
+							<div class="user-cell">
+								<span class="user-avatar-small">
+									{{ getUserInitials(getUserNameSync(r.userId)) }}
+								</span>
+								<div class="user-info">
+									<span class="user-name">
+										{{ getUserNameSync(r.userId) }}
+									</span>
+									<span class="user-id">ID: {{ r.userId.slice(0, 6) }}</span>
+								</div>
+							</div>
+						</td>
+					</ng-container>
+
+					<!-- Lot Column -->
+					<ng-container matColumnDef="lotName">
+						<th mat-header-cell *matHeaderCellDef mat-sort-header>Parking Lot</th>
+						<td mat-cell *matCellDef="let r" data-label="Parking Lot">
+							<div class="lot-cell">
+								<mat-icon>local_parking</mat-icon>
+								<div class="lot-info">
+									<span class="lot-name">{{ getLotNameSync(r.lotId) }}</span>
+									<span class="space-number">Space #{{ r.spaceId }}</span>
+								</div>
+							</div>
+						</td>
+					</ng-container>
+
+					<!-- Space Column (hidden by default) -->
+					<ng-container matColumnDef="spaceNumber">
+						<th mat-header-cell *matHeaderCellDef mat-sort-header>Space</th>
+						<td mat-cell *matCellDef="let r" data-label="Space">{{ r.spaceId }}</td>
+					</ng-container>
+
+					<!-- Check In -->
+					<ng-container matColumnDef="checkInDateTime">
+						<th mat-header-cell *matHeaderCellDef mat-sort-header>Check In</th>
+						<td mat-cell *matCellDef="let r" data-label="Check In">
+							<div class="datetime-cell">
+								<span class="date">{{ r.checkInDateTime | date: "MMM d, y" }}</span>
+								<span class="time">{{ r.checkInDateTime | date: "h:mm a" }}</span>
+							</div>
+						</td>
+					</ng-container>
+
+					<!-- Check Out -->
+					<ng-container matColumnDef="checkOutDateTime">
+						<th mat-header-cell *matHeaderCellDef mat-sort-header>Check Out</th>
+						<td mat-cell *matCellDef="let r" data-label="Check Out">
+							<div class="datetime-cell">
+								<span class="date">{{ r.checkOutDateTime | date: "MMM d, y" }}</span>
+								<span class="time">{{ r.checkOutDateTime | date: "h:mm a" }}</span>
+							</div>
+						</td>
+					</ng-container>
+
+					<!-- Status -->
+					<ng-container matColumnDef="status">
+						<th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+						<td mat-cell *matCellDef="let r" data-label="Status">
+							<span class="status-badge" [ngClass]="r.status.toLowerCase()">
+								<mat-icon>{{ getStatusIcon(r.status) }}</mat-icon>
+								{{ r.status }}
+							</span>
+						</td>
+					</ng-container>
+
+					<!-- Actions -->
+					<ng-container matColumnDef="actions">
+						<th mat-header-cell *matHeaderCellDef>Actions</th>
+						<td mat-cell *matCellDef="let r" data-label="Actions">
+							<div class="action-buttons">
+								<button mat-icon-button [matMenuTriggerFor]="menu" class="action-btn" [disabled]="isLoading()">
+									<mat-icon>more_vert</mat-icon>
+								</button>
+								<mat-menu #menu="matMenu" xPosition="before">
+									<button mat-menu-item (click)="openEdit(r)">
+										<mat-icon>edit</mat-icon>
+										<span>Edit</span>
+									</button>
+									<button mat-menu-item (click)="deleteReservation(r.id)" class="delete-action">
+										<mat-icon>delete</mat-icon>
+										<span>Delete</span>
+									</button>
+								</mat-menu>
+							</div>
+						</td>
+					</ng-container>
+
+					<tr mat-header-row *matHeaderRowDef="visibleColumns"></tr>
+					<tr mat-row *matRowDef="let row; columns: visibleColumns"></tr>
+				</table>
+			}
+		</div>
+
+		<!-- Paginator -->
+		@if (totalItems > 0) {
+			<div class="paginator-wrapper">
+				<mat-paginator
+					[pageSize]="pageSize"
+					[pageSizeOptions]="[5, 10, 20, 50, 100]"
+					[pageIndex]="pageIndex"
+					(page)="onPageChange($event)"
+					showFirstLastButtons
+					[length]="totalItems"
+					[disabled]="isLoading()">
+				</mat-paginator>
+
+				<div class="paginator-info">
+					<span>
+						Showing {{ getStartIndex() }} - {{ getEndIndex() }} of {{ totalItems }}
+						{{ totalItems === 1 ? "reservation" : "reservations" }}
+					</span>
+				</div>
+			</div>
+		}
+	</div>
 </div>

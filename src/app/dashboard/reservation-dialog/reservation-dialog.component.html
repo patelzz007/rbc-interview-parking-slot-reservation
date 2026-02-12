@@ -1,160 +1,229 @@
 <div class="reservation-dialog">
-	<h2 mat-dialog-title class="dialog-title">
-		{{ data?.id ? "Edit Reservation" : "Create Reservation" }}
-	</h2>
+  <h2 mat-dialog-title class="dialog-title">
+    {{ data?.id ? 'Edit Reservation' : 'Create Reservation' }}
+  </h2>
 
-	<mat-dialog-content>
-		<form [formGroup]="form" class="reservation-form">
-			<!-- BASIC INFORMATION -->
-			<section class="form-section">
-				<h3 class="section-title">Basic Information</h3>
+  <mat-dialog-content>
+    <form [formGroup]="form" class="reservation-form">
+      <!-- BASIC INFORMATION -->
+      <section class="form-section">
+        <h3 class="section-title">Basic Information</h3>
 
-				<div class="form-row">
-					<mat-form-field appearance="outline" class="form-field">
-						<mat-label>User</mat-label>
-						<mat-select formControlName="userId">
-							<mat-option *ngFor="let u of users" [value]="u.id"> {{ u.firstName }} {{ u.lastName }} </mat-option>
-						</mat-select>
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>User</mat-label>
+            <mat-select formControlName="userId">
+              @for (u of users; track u.id) {
+                <mat-option [value]="u.id"> {{ u.firstName }} {{ u.lastName }} </mat-option>
+              }
+            </mat-select>
 
-						<mat-error *ngIf="form.get('userId')?.hasError('required')"> User is required </mat-error>
-					</mat-form-field>
+            @if (form.get('userId')?.hasError('required')) {
+              <mat-error> User is required </mat-error>
+            }
+          </mat-form-field>
 
-					<mat-form-field appearance="outline" class="form-field">
-						<mat-label>Status</mat-label>
-						<mat-select formControlName="status">
-							<mat-option *ngFor="let s of statuses" [value]="s">
-								{{ s }}
-							</mat-option>
-						</mat-select>
-					</mat-form-field>
-				</div>
-			</section>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              @for (s of statuses; track s) {
+                <mat-option [value]="s">
+                  {{ s }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </section>
 
-			<!-- PARKING DETAILS -->
-			<section class="form-section">
-				<h3 class="section-title">Parking Details</h3>
+      <!-- PARKING DETAILS -->
+      <section class="form-section">
+        <h3 class="section-title">Parking Details</h3>
 
-				<div class="form-column">
-					<mat-form-field appearance="outline" class="form-field">
-						<mat-label>Parking Lot</mat-label>
-						<mat-select formControlName="lotId">
-							<mat-option *ngFor="let lot of parkingLots" [value]="lot.id"> {{ lot.name }} · {{ lot.address }} </mat-option>
-						</mat-select>
-						<mat-hint>Select the parking lot location</mat-hint>
-						<mat-error *ngIf="form.get('lotId')?.hasError('required')"> Parking lot is required </mat-error>
-					</mat-form-field>
+        <div class="form-column">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Parking Lot</mat-label>
+            <mat-select formControlName="lotId">
+              @for (lot of parkingLots; track lot.id) {
+                <mat-option [value]="lot.id"> {{ lot.name }} · {{ lot.address }} </mat-option>
+              }
+            </mat-select>
+            <mat-hint>Select the parking lot location</mat-hint>
 
-					<mat-form-field appearance="outline" class="form-field">
-						<mat-label>Parking Space</mat-label>
-						<mat-select formControlName="spaceId" [disabled]="!form.get('lotId')?.value">
-							<mat-option *ngIf="filteredSpaces.length === 0" disabled>
-								{{ form.get("lotId")?.value ? "No spaces available" : "Select a lot first" }}
-							</mat-option>
-							<mat-option *ngFor="let space of filteredSpaces" [value]="space.id">
-								Space {{ space.spaceNumber }} · Level {{ space.level }} · {{ space.type }}
-							</mat-option>
-						</mat-select>
-						<mat-hint *ngIf="form.get('lotId')?.value && filteredSpaces.length > 0"> {{ filteredSpaces.length }} space(s) available </mat-hint>
-						<mat-error *ngIf="form.get('spaceId')?.hasError('required')"> Parking space is required </mat-error>
-					</mat-form-field>
-				</div>
-			</section>
+            @if (form.get('lotId')?.hasError('required')) {
+              <mat-error> Parking lot is required </mat-error>
+            }
+          </mat-form-field>
 
-			<!-- RESERVATION TIME -->
-			<section class="form-section">
-				<h3 class="section-title">Reservation Time</h3>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Parking Space</mat-label>
+            <mat-select formControlName="spaceId" [disabled]="!form.get('lotId')?.value">
+              @if (filteredSpaces.length === 0) {
+                <mat-option disabled>
+                  {{ form.get('lotId')?.value ? 'No spaces available' : 'Select a lot first' }}
+                </mat-option>
+              }
 
-				<div class="time-section">
-					<!-- Check In -->
-					<div class="time-group">
-						<div class="time-label">Check In</div>
-						<div class="form-row">
-							<mat-form-field appearance="outline" class="form-field">
-								<mat-label>Date</mat-label>
-								<input matInput [matDatepicker]="checkInPicker" formControlName="checkInDate" />
-								<mat-datepicker-toggle matIconSuffix [for]="checkInPicker"></mat-datepicker-toggle>
-								<mat-datepicker #checkInPicker></mat-datepicker>
-								<mat-error *ngIf="form.get('checkInDate')?.hasError('required')"> Check-in date is required </mat-error>
-							</mat-form-field>
+              @for (space of filteredSpaces; track space.id) {
+                <mat-option [value]="space.id">
+                  Space {{ space.spaceNumber }} · Level {{ space.level }} · {{ space.type }}
+                </mat-option>
+              }
+            </mat-select>
 
-							<mat-form-field appearance="outline" class="form-field">
-								<mat-label>Time</mat-label>
-								<input matInput [matTimepicker]="checkInTimePicker" [min]="checkInMinTime" formControlName="checkInTime" />
-								<mat-timepicker-toggle matIconSuffix [for]="checkInTimePicker" />
-								<mat-timepicker #checkInTimePicker />
-								<mat-error *ngIf="form.get('checkInTime')?.hasError('required')"> Check-in time is required </mat-error>
-							</mat-form-field>
-						</div>
-					</div>
+            @if (form.get('lotId')?.value && filteredSpaces.length > 0) {
+              <mat-hint>{{ filteredSpaces.length }} space(s) available</mat-hint>
+            }
 
-					<!-- Check Out -->
-					<div class="time-group">
-						<div class="time-label">Check Out</div>
-						<div class="form-row">
-							<mat-form-field appearance="outline" class="form-field">
-								<mat-label>Date</mat-label>
-								<input matInput [matDatepicker]="checkOutPicker" formControlName="checkOutDate" [matDatepickerFilter]="endDateFilter" />
-								<mat-datepicker-toggle matIconSuffix [for]="checkOutPicker"></mat-datepicker-toggle>
-								<mat-datepicker #checkOutPicker></mat-datepicker>
+            @if (form.get('spaceId')?.hasError('required')) {
+              <mat-error> Parking space is required </mat-error>
+            }
+          </mat-form-field>
+        </div>
+      </section>
 
-								<mat-error *ngIf="form.get('checkOutDate')?.hasError('required')"> Check-out date is required </mat-error>
-								<mat-error *ngIf="form.get('checkOutDate')?.hasError('invalidDateRange')"> Check-out must be later than check-in </mat-error>
-							</mat-form-field>
+      <!-- RESERVATION TIME -->
+      <section class="form-section">
+        <h3 class="section-title">Reservation Time</h3>
 
-							<mat-form-field appearance="outline" class="form-field">
-								<mat-label>Time</mat-label>
-								<input matInput [matTimepicker]="checkOutTimePicker" formControlName="checkOutTime" [min]="checkOutMinTime" />
-								<mat-timepicker-toggle matIconSuffix [for]="checkOutTimePicker" />
-								<mat-timepicker #checkOutTimePicker />
+        <div class="time-section">
+          <!-- Check In -->
+          <div class="time-group">
+            <div class="time-label">Check In</div>
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Date</mat-label>
+                <input matInput [matDatepicker]="checkInPicker" formControlName="checkInDate" />
+                <mat-datepicker-toggle matIconSuffix [for]="checkInPicker"></mat-datepicker-toggle>
+                <mat-datepicker #checkInPicker></mat-datepicker>
 
-								<mat-error *ngIf="form.get('checkOutTime')?.hasError('required')"> Check-out time is required </mat-error>
-								<mat-error *ngIf="form.get('checkOutTime')?.hasError('invalidDateRange')"> Check-out must be later than check-in </mat-error>
-							</mat-form-field>
-						</div>
-					</div>
-				</div>
+                @if (form.get('checkInDate')?.hasError('required')) {
+                  <mat-error> Check-in date is required </mat-error>
+                }
+              </mat-form-field>
 
-				<div class="duration-display">
-					Duration:
-					<span class="duration-value"> {{ durationHours | number: "1.0-2" }} hour(s) </span>
-				</div>
-			</section>
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Time</mat-label>
+                <input
+                  matInput
+                  [matTimepicker]="checkInTimePicker"
+                  [min]="checkInMinTime"
+                  formControlName="checkInTime"
+                />
+                <mat-timepicker-toggle matIconSuffix [for]="checkInTimePicker" />
+                <mat-timepicker #checkInTimePicker />
 
-			<!-- PAYMENT -->
-			<section class="form-section">
-				<h3 class="section-title">Payment</h3>
+                @if (form.get('checkInTime')?.hasError('required')) {
+                  <mat-error> Check-in time is required </mat-error>
+                }
+              </mat-form-field>
+            </div>
+          </div>
 
-				<div>
-					<mat-form-field appearance="outline" class="form-field form-field--half">
-						<mat-label>Total Cost</mat-label>
-						<span matTextPrefix>$&nbsp;</span>
-						<input matInput type="number" formControlName="totalCost" placeholder="0.00" readonly />
-						<mat-error *ngIf="form.get('totalCost')?.hasError('required')"> Total cost is required </mat-error>
-						@if (form.get("totalCost")?.hasError("min")) {
-							<mat-error> Total cost must be at least 0 </mat-error>
-						}
-					</mat-form-field>
-				</div>
-			</section>
+          <!-- Check Out -->
+          <div class="time-group">
+            <div class="time-label">Check Out</div>
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Date</mat-label>
+                <input
+                  matInput
+                  [matDatepicker]="checkOutPicker"
+                  formControlName="checkOutDate"
+                  [matDatepickerFilter]="endDateFilter"
+                />
+                <mat-datepicker-toggle matIconSuffix [for]="checkOutPicker"></mat-datepicker-toggle>
+                <mat-datepicker #checkOutPicker></mat-datepicker>
 
-			<!-- ADDITIONAL NOTES -->
-			<section class="form-section">
-				<h3 class="section-title">Additional Notes</h3>
+                @if (form.get('checkOutDate')?.hasError('required')) {
+                  <mat-error> Check-out date is required </mat-error>
+                }
 
-				<div>
-					<mat-form-field appearance="outline" class="form-field">
-						<mat-label>Special Requirements</mat-label>
-						<textarea matInput rows="4" formControlName="specialRequirements" placeholder="Enter any special requirements (optional)"> </textarea>
-					</mat-form-field>
-				</div>
-			</section>
-		</form>
-	</mat-dialog-content>
+                @if (form.get('checkOutDate')?.hasError('invalidDateRange')) {
+                  <mat-error> Check-out must be later than check-in </mat-error>
+                }
+              </mat-form-field>
 
-	<mat-dialog-actions class="dialog-actions">
-		<button mat-button (click)="close()" type="button" class="btn-cancel">Cancel</button>
-		<button mat-flat-button color="primary" (click)="save()" type="button" class="btn-submit" [disabled]="form.invalid">
-			{{ data?.id ? "Update Reservation" : "Create Reservation" }}
-		</button>
-	</mat-dialog-actions>
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Time</mat-label>
+                <input
+                  matInput
+                  [matTimepicker]="checkOutTimePicker"
+                  formControlName="checkOutTime"
+                  [min]="checkOutMinTime"
+                />
+                <mat-timepicker-toggle matIconSuffix [for]="checkOutTimePicker" />
+                <mat-timepicker #checkOutTimePicker />
+
+                @if (form.get('checkOutTime')?.hasError('required')) {
+                  <mat-error> Check-out time is required </mat-error>
+                }
+
+                @if (form.get('checkOutTime')?.hasError('invalidDateRange')) {
+                  <mat-error> Check-out must be later than check-in </mat-error>
+                }
+              </mat-form-field>
+            </div>
+          </div>
+        </div>
+
+        <div class="duration-display">
+          Duration:
+          <span class="duration-value"> {{ durationHours | number: '1.0-2' }} hour(s) </span>
+        </div>
+      </section>
+
+      <!-- PAYMENT -->
+      <section class="form-section">
+        <h3 class="section-title">Payment</h3>
+
+        <div>
+          <mat-form-field appearance="outline" class="form-field form-field--half">
+            <mat-label>Total Cost</mat-label>
+            <span matTextPrefix>$&nbsp;</span>
+            <input matInput type="number" formControlName="totalCost" placeholder="0.00" />
+
+            @if (form.get('totalCost')?.hasError('required')) {
+              <mat-error> Total cost is required </mat-error>
+            }
+
+            @if (form.get('totalCost')?.hasError('min')) {
+              <mat-error> Total cost must be at least 0 </mat-error>
+            }
+          </mat-form-field>
+        </div>
+      </section>
+
+      <!-- ADDITIONAL NOTES -->
+      <section class="form-section">
+        <h3 class="section-title">Additional Notes</h3>
+
+        <div>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Special Requirements</mat-label>
+            <textarea
+              matInput
+              rows="4"
+              formControlName="specialRequirements"
+              placeholder="Enter any special requirements (optional)"
+            ></textarea>
+          </mat-form-field>
+        </div>
+      </section>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-button (click)="close()" type="button" class="btn-cancel">Cancel</button>
+    <button
+      mat-flat-button
+      color="primary"
+      (click)="save()"
+      type="button"
+      class="btn-submit"
+      [disabled]="form.invalid"
+    >
+      {{ data?.id ? 'Update Reservation' : 'Create Reservation' }}
+    </button>
+  </mat-dialog-actions>
 </div>

@@ -63,7 +63,7 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
 			checkOutTime: [null as Date | null, Validators.required],
 			status: [ReservationStatus.PENDING, Validators.required],
 			specialRequirements: [""],
-			totalCost: [0, [Validators.required, Validators.min(0)]],
+			totalCost: [{value: 0, disabled: true}, [Validators.required, Validators.min(0)]],
 		},
 		{ validators: this.dateRangeValidator.bind(this) }
 	);
@@ -73,6 +73,7 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
 		this.setupDateTimeSync();
 		this.setupDurationAndPrice();
 
+		console.log(this.data);
 		if (this.data) {
 			this.patchForEdit(this.data);
 		}
