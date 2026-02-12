@@ -48,12 +48,7 @@
 				<mat-form-field appearance="outline" class="search-field">
 					<mat-label>Search</mat-label>
 					<mat-icon matPrefix>search</mat-icon>
-					<input
-						matInput
-						(input)="onSearchInput($any($event.target).value)"
-						[value]="searchInput$.getValue()"
-						placeholder="Search by ID, user, or lot..."
-						[disabled]="isLoading()" />
+					<input matInput (input)="onSearchInput($any($event.target).value)" [value]="searchInput$.getValue()" placeholder="Search by ID, user, or lot..." [disabled]="isLoading()" />
 					@if (searchInput$.getValue()) {
 						<button matSuffix mat-icon-button aria-label="Clear" (click)="clearSearch()" class="clear-btn">
 							<mat-icon>close</mat-icon>
@@ -67,11 +62,7 @@
 					<mat-icon matPrefix>circle</mat-icon>
 					<mat-select [formControl]="statusControl" [disabled]="isLoading()" panelClass="searchable-dropdown">
 						<mat-option>
-							<ngx-mat-select-search
-								[formControl]="statusSearchControl"
-								placeholderLabel="Search status..."
-								noEntriesFoundLabel="No status found"
-								(keydown)="$event.stopPropagation()">
+							<ngx-mat-select-search [formControl]="statusSearchControl" placeholderLabel="Search status..." noEntriesFoundLabel="No status found" (keydown)="$event.stopPropagation()">
 								<mat-icon ngxMatSelectSearchIcon>search</mat-icon>
 							</ngx-mat-select-search>
 						</mat-option>
@@ -92,11 +83,7 @@
 					<mat-icon matPrefix>local_parking</mat-icon>
 					<mat-select [formControl]="lotControl" [disabled]="isLoading()" panelClass="searchable-dropdown">
 						<mat-option>
-							<ngx-mat-select-search
-								[formControl]="lotSearchControl"
-								placeholderLabel="Search lots..."
-								noEntriesFoundLabel="No lots found"
-								(keydown)="$event.stopPropagation()">
+							<ngx-mat-select-search [formControl]="lotSearchControl" placeholderLabel="Search lots..." noEntriesFoundLabel="No lots found" (keydown)="$event.stopPropagation()">
 								<mat-icon ngxMatSelectSearchIcon>search</mat-icon>
 							</ngx-mat-select-search>
 						</mat-option>
@@ -117,11 +104,7 @@
 					<mat-icon matPrefix>person</mat-icon>
 					<mat-select [formControl]="userControl" [disabled]="isLoading()" panelClass="searchable-dropdown">
 						<mat-option>
-							<ngx-mat-select-search
-								[formControl]="userSearchControl"
-								placeholderLabel="Search users..."
-								noEntriesFoundLabel="No users found"
-								(keydown)="$event.stopPropagation()">
+							<ngx-mat-select-search [formControl]="userSearchControl" placeholderLabel="Search users..." noEntriesFoundLabel="No users found" (keydown)="$event.stopPropagation()">
 								<mat-icon ngxMatSelectSearchIcon>search</mat-icon>
 							</ngx-mat-select-search>
 						</mat-option>
@@ -230,14 +213,7 @@
 					</button>
 				</div>
 			} @else {
-				<table
-					mat-table
-					[dataSource]="dataSource"
-					matSort
-					matSortActive="checkInDateTime"
-					matSortDirection="desc"
-					(matSortChange)="handleSortChange($event)"
-					class="reservation-table">
+				<table mat-table [dataSource]="dataSource" matSort matSortActive="checkInDateTime" matSortDirection="desc" (matSortChange)="handleSortChange($event)" class="reservation-table">
 					<!-- ID Column -->
 					<ng-container matColumnDef="id">
 						<th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>

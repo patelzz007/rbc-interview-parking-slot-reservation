@@ -227,11 +227,11 @@ export class DashboardComponent implements AfterViewInit, OnInit {
 			.pipe(
 				map(([reservations, search, status, lot, user, lots, users]) => {
 					// Update caches
-					lots.forEach((lot) => {
+					lots.map((lot) => {
 						this.lotNameMap.set(lot.id, lot.name);
 					});
 
-					users.forEach((user) => {
+					users.map((user) => {
 						this.userNameMap.set(user.id, `${user.firstName} ${user.lastName}`);
 						this.userEmailMap.set(user.id, user.email || "");
 					});
@@ -502,7 +502,7 @@ export class DashboardComponent implements AfterViewInit, OnInit {
 		const dialogRef = this.dialog.open(ReservationDialogComponent, {
 			width: "800px",
 			maxWidth: "95vw",
-			data: { },
+			data: {},
 		});
 
 		dialogRef
