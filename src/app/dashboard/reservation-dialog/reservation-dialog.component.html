@@ -1,229 +1,369 @@
 <div class="reservation-dialog">
-  <h2 mat-dialog-title class="dialog-title">
-    {{ data?.id ? 'Edit Reservation' : 'Create Reservation' }}
-  </h2>
+  <!-- Header -->
+  <div class="dialog-header">
+    <h2 mat-dialog-title class="dialog-title">
+      {{ data?.id ? 'Edit Reservation' : 'New Reservation' }}
+    </h2>
+    <button mat-icon-button class="close-btn" (click)="close()" aria-label="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-  <mat-dialog-content>
+  <mat-dialog-content class="dialog-content">
     <form [formGroup]="form" class="reservation-form">
-      <!-- BASIC INFORMATION -->
-      <section class="form-section">
-        <h3 class="section-title">Basic Information</h3>
+      <!-- Basic Information Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <mat-icon class="section-icon">person</mat-icon>
+          <h3>Basic Information</h3>
+        </div>
 
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="form-field">
-            <mat-label>User</mat-label>
+        <div class="form-grid">
+          <!-- User Dropdown -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Select User</mat-label>
             <mat-select formControlName="userId">
-              @for (u of users; track u.id) {
-                <mat-option [value]="u.id"> {{ u.firstName }} {{ u.lastName }} </mat-option>
+              <!-- Custom trigger display -->
+              <mat-select-trigger>
+                @if (form.get('userId')?.value) {
+                  {{ getUserFullName(form.get('userId')?.value) }}
+                }
+              </mat-select-trigger>
+
+              <mat-option>
+                <ngx-mat-select-search
+                  [formControl]="userSearchControl"
+                  placeholderLabel="Search users..."
+                  noEntriesFoundLabel="No users found"
+                  (keydown)="$event.stopPropagation()"
+                >
+                  <mat-icon ngxMatSelectSearchIcon>search</mat-icon>
+                </ngx-mat-select-search>
+              </mat-option>
+
+              @for (user of filteredUsers$ | async; track user.id) {
+                <mat-option [value]="user.id">
+                  <div class="user-option">
+                    <span class="user-initials">{{ getUserInitials(user) }}</span>
+                    <div class="user-details">
+                      <span class="user-name">{{ user.firstName }} {{ user.lastName }}</span>
+                      <span class="user-email">{{ user.email }}</span>
+                    </div>
+                  </div>
+                </mat-option>
               }
             </mat-select>
-
-            @if (form.get('userId')?.hasError('required')) {
-              <mat-error> User is required </mat-error>
+            @if (form.get('userId')?.hasError('required') && form.get('userId')?.touched) {
+              <mat-error>User is required</mat-error>
             }
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="form-field">
+          <!-- Status Dropdown -->
+          <mat-form-field appearance="outline" class="full-width">
             <mat-label>Status</mat-label>
             <mat-select formControlName="status">
-              @for (s of statuses; track s) {
-                <mat-option [value]="s">
-                  {{ s }}
+              <!-- Custom trigger display -->
+              <mat-select-trigger>
+                @if (form.get('status')?.value) {
+                  {{ form.get('status')?.value }}
+                }
+              </mat-select-trigger>
+
+              <mat-option>
+                <ngx-mat-select-search
+                  [formControl]="statusSearchControl"
+                  placeholderLabel="Search status..."
+                  noEntriesFoundLabel="No status found"
+                  (keydown)="$event.stopPropagation()"
+                >
+                  <mat-icon ngxMatSelectSearchIcon>search</mat-icon>
+                </ngx-mat-select-search>
+              </mat-option>
+
+              @for (status of filteredStatuses$ | async; track status) {
+                <mat-option [value]="status">
+                  <div class="status-option" [ngClass]="status.toLowerCase()">
+                    <mat-icon>{{ getStatusIcon(status) }}</mat-icon>
+                    <span>{{ status }}</span>
+                  </div>
                 </mat-option>
               }
             </mat-select>
           </mat-form-field>
         </div>
-      </section>
+      </div>
 
-      <!-- PARKING DETAILS -->
-      <section class="form-section">
-        <h3 class="section-title">Parking Details</h3>
+      <!-- Parking Details Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <mat-icon class="section-icon">local_parking</mat-icon>
+          <h3>Parking Details</h3>
+        </div>
 
-        <div class="form-column">
-          <mat-form-field appearance="outline" class="form-field">
+        <div class="form-grid">
+          <!-- Parking Lot Dropdown -->
+          <mat-form-field appearance="outline" class="full-width">
             <mat-label>Parking Lot</mat-label>
             <mat-select formControlName="lotId">
-              @for (lot of parkingLots; track lot.id) {
-                <mat-option [value]="lot.id"> {{ lot.name }} · {{ lot.address }} </mat-option>
+              <!-- Custom trigger display -->
+              <mat-select-trigger>
+                @if (form.get('lotId')?.value) {
+                  {{ getLotName(form.get('lotId')?.value) }}
+                }
+              </mat-select-trigger>
+
+              <mat-option>
+                <ngx-mat-select-search
+                  [formControl]="lotSearchControl"
+                  placeholderLabel="Search lots..."
+                  noEntriesFoundLabel="No lots found"
+                  (keydown)="$event.stopPropagation()"
+                >
+                  <mat-icon ngxMatSelectSearchIcon>search</mat-icon>
+                </ngx-mat-select-search>
+              </mat-option>
+
+              @for (lot of filteredLots$ | async; track lot.id) {
+                <mat-option [value]="lot.id">
+                  <div class="lot-option">
+                    <span class="lot-name">{{ lot.name }}</span>
+                    <span class="lot-address">{{ lot.address }}</span>
+                  </div>
+                </mat-option>
               }
             </mat-select>
-            <mat-hint>Select the parking lot location</mat-hint>
-
-            @if (form.get('lotId')?.hasError('required')) {
-              <mat-error> Parking lot is required </mat-error>
+            @if (form.get('lotId')?.hasError('required') && form.get('lotId')?.touched) {
+              <mat-error>Parking lot is required</mat-error>
             }
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="form-field">
+          <!-- Parking Space Dropdown -->
+          <mat-form-field appearance="outline" class="full-width">
             <mat-label>Parking Space</mat-label>
             <mat-select formControlName="spaceId" [disabled]="!form.get('lotId')?.value">
-              @if (filteredSpaces.length === 0) {
+              <!-- Custom trigger display -->
+              <mat-select-trigger>
+                @if (form.get('spaceId')?.value) {
+                  {{ getSpaceDisplay(form.get('spaceId')?.value) }}
+                }
+              </mat-select-trigger>
+
+              <mat-option>
+                <ngx-mat-select-search
+                  [formControl]="spaceSearchControl"
+                  placeholderLabel="Search spaces..."
+                  noEntriesFoundLabel="No spaces available"
+                  (keydown)="$event.stopPropagation()"
+                >
+                  <mat-icon ngxMatSelectSearchIcon>search</mat-icon>
+                </ngx-mat-select-search>
+              </mat-option>
+
+              @if ((filteredSpaces$ | async)?.length === 0) {
                 <mat-option disabled>
-                  {{ form.get('lotId')?.value ? 'No spaces available' : 'Select a lot first' }}
+                  <div class="empty-state-option">
+                    <mat-icon>info</mat-icon>
+                    {{ form.get('lotId')?.value ? 'No spaces available' : 'Select a lot first' }}
+                  </div>
                 </mat-option>
               }
 
-              @for (space of filteredSpaces; track space.id) {
+              @for (space of filteredSpaces$ | async; track space.id) {
                 <mat-option [value]="space.id">
-                  Space {{ space.spaceNumber }} · Level {{ space.level }} · {{ space.type }}
+                  <div class="space-option">
+                    <mat-icon>local_parking</mat-icon>
+                    <div class="space-details">
+                      <span class="space-number">Space #{{ space.spaceNumber }}</span>
+                      <span class="space-meta">Level {{ space.level }} · {{ space.type }}</span>
+                    </div>
+                  </div>
                 </mat-option>
               }
             </mat-select>
-
-            @if (form.get('lotId')?.value && filteredSpaces.length > 0) {
-              <mat-hint>{{ filteredSpaces.length }} space(s) available</mat-hint>
-            }
-
-            @if (form.get('spaceId')?.hasError('required')) {
-              <mat-error> Parking space is required </mat-error>
+            @if (form.get('spaceId')?.hasError('required') && form.get('spaceId')?.touched) {
+              <mat-error>Parking space is required</mat-error>
             }
           </mat-form-field>
         </div>
-      </section>
+      </div>
 
-      <!-- RESERVATION TIME -->
-      <section class="form-section">
-        <h3 class="section-title">Reservation Time</h3>
+      <!-- Reservation Time Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <mat-icon class="section-icon">schedule</mat-icon>
+          <h3>Reservation Time</h3>
+        </div>
 
-        <div class="time-section">
+        <div class="">
           <!-- Check In -->
-          <div class="time-group">
-            <div class="time-label">Check In</div>
-            <div class="form-row">
-              <mat-form-field appearance="outline" class="form-field">
+          <div class="time-block">
+            <div class="time-block-label">
+              <mat-icon>login</mat-icon>
+              <span>Check In</span>
+            </div>
+            <div class="time-inputs">
+              <mat-form-field appearance="outline">
                 <mat-label>Date</mat-label>
-                <input matInput [matDatepicker]="checkInPicker" formControlName="checkInDate" />
+                <input
+                  matInput
+                  [matDatepicker]="checkInPicker"
+                  formControlName="checkInDate"
+                  placeholder="MM/DD/YYYY"
+                />
                 <mat-datepicker-toggle matIconSuffix [for]="checkInPicker"></mat-datepicker-toggle>
                 <mat-datepicker #checkInPicker></mat-datepicker>
-
-                @if (form.get('checkInDate')?.hasError('required')) {
-                  <mat-error> Check-in date is required </mat-error>
+                @if (
+                  form.get('checkInDate')?.hasError('required') && form.get('checkInDate')?.touched
+                ) {
+                  <mat-error>Required</mat-error>
                 }
               </mat-form-field>
 
-              <mat-form-field appearance="outline" class="form-field">
+              <mat-form-field appearance="outline">
                 <mat-label>Time</mat-label>
                 <input
                   matInput
                   [matTimepicker]="checkInTimePicker"
                   [min]="checkInMinTime"
                   formControlName="checkInTime"
+                  placeholder="HH:MM"
                 />
                 <mat-timepicker-toggle matIconSuffix [for]="checkInTimePicker" />
                 <mat-timepicker #checkInTimePicker />
-
-                @if (form.get('checkInTime')?.hasError('required')) {
-                  <mat-error> Check-in time is required </mat-error>
+                @if (
+                  form.get('checkInTime')?.hasError('required') && form.get('checkInTime')?.touched
+                ) {
+                  <mat-error>Required</mat-error>
                 }
               </mat-form-field>
             </div>
           </div>
+        </div>
 
+        <div class="">
           <!-- Check Out -->
-          <div class="time-group">
-            <div class="time-label">Check Out</div>
-            <div class="form-row">
-              <mat-form-field appearance="outline" class="form-field">
+          <div class="time-block">
+            <div class="time-block-label">
+              <mat-icon>logout</mat-icon>
+              <span>Check Out</span>
+            </div>
+            <div class="time-inputs">
+              <mat-form-field appearance="outline">
                 <mat-label>Date</mat-label>
                 <input
                   matInput
                   [matDatepicker]="checkOutPicker"
                   formControlName="checkOutDate"
                   [matDatepickerFilter]="endDateFilter"
+                  placeholder="MM/DD/YYYY"
                 />
                 <mat-datepicker-toggle matIconSuffix [for]="checkOutPicker"></mat-datepicker-toggle>
                 <mat-datepicker #checkOutPicker></mat-datepicker>
-
-                @if (form.get('checkOutDate')?.hasError('required')) {
-                  <mat-error> Check-out date is required </mat-error>
+                @if (
+                  form.get('checkOutDate')?.hasError('required') &&
+                  form.get('checkOutDate')?.touched
+                ) {
+                  <mat-error>Required</mat-error>
                 }
-
                 @if (form.get('checkOutDate')?.hasError('invalidDateRange')) {
-                  <mat-error> Check-out must be later than check-in </mat-error>
+                  <mat-error>Must be after check-in</mat-error>
                 }
               </mat-form-field>
 
-              <mat-form-field appearance="outline" class="form-field">
+              <mat-form-field appearance="outline">
                 <mat-label>Time</mat-label>
                 <input
                   matInput
                   [matTimepicker]="checkOutTimePicker"
                   formControlName="checkOutTime"
                   [min]="checkOutMinTime"
+                  placeholder="HH:MM"
                 />
                 <mat-timepicker-toggle matIconSuffix [for]="checkOutTimePicker" />
                 <mat-timepicker #checkOutTimePicker />
-
-                @if (form.get('checkOutTime')?.hasError('required')) {
-                  <mat-error> Check-out time is required </mat-error>
-                }
-
-                @if (form.get('checkOutTime')?.hasError('invalidDateRange')) {
-                  <mat-error> Check-out must be later than check-in </mat-error>
+                @if (
+                  form.get('checkOutTime')?.hasError('required') &&
+                  form.get('checkOutTime')?.touched
+                ) {
+                  <mat-error>Required</mat-error>
                 }
               </mat-form-field>
             </div>
           </div>
         </div>
 
-        <div class="duration-display">
-          Duration:
-          <span class="duration-value"> {{ durationHours | number: '1.0-2' }} hour(s) </span>
+        <!-- Duration Display -->
+        <div class="duration-panel">
+          <div class="duration-label">
+            <mat-icon>hourglass_empty</mat-icon>
+            <span>Total Duration</span>
+          </div>
+          <div class="duration-value">
+            {{ durationHours | number: '1.0-2' }} <span class="duration-unit">hours</span>
+          </div>
         </div>
-      </section>
+      </div>
 
-      <!-- PAYMENT -->
-      <section class="form-section">
-        <h3 class="section-title">Payment</h3>
+      <!-- Payment Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <mat-icon class="section-icon">payments</mat-icon>
+          <h3>Payment</h3>
+        </div>
 
-        <div>
-          <mat-form-field appearance="outline" class="form-field form-field--half">
-            <mat-label>Total Cost</mat-label>
-            <span matTextPrefix>$&nbsp;</span>
-            <input matInput type="number" formControlName="totalCost" placeholder="0.00" />
-
-            @if (form.get('totalCost')?.hasError('required')) {
-              <mat-error> Total cost is required </mat-error>
+        <div class="payment-row">
+          <mat-form-field appearance="outline" class="cost-field">
+            <mat-label class="pl-6">Total Cost</mat-label>
+            <span matTextPrefix>$</span>
+            <input matInput type="number" formControlName="totalCost" placeholder="0.00" readonly />
+            @if (form.get('totalCost')?.hasError('required') && form.get('totalCost')?.touched) {
+              <mat-error>Required</mat-error>
             }
-
             @if (form.get('totalCost')?.hasError('min')) {
-              <mat-error> Total cost must be at least 0 </mat-error>
+              <mat-error>Must be at least 0</mat-error>
             }
           </mat-form-field>
-        </div>
-      </section>
 
-      <!-- ADDITIONAL NOTES -->
-      <section class="form-section">
-        <h3 class="section-title">Additional Notes</h3>
-
-        <div>
-          <mat-form-field appearance="outline" class="form-field">
-            <mat-label>Special Requirements</mat-label>
-            <textarea
-              matInput
-              rows="4"
-              formControlName="specialRequirements"
-              placeholder="Enter any special requirements (optional)"
-            ></textarea>
-          </mat-form-field>
+          @if (form.get('lotId')?.value && durationHours > 0) {
+            <div class="rate-info">
+              <mat-icon>info</mat-icon>
+              <span>${{ getLotRate(form.get('lotId')?.value) }}/hour</span>
+            </div>
+          }
         </div>
-      </section>
+      </div>
+
+      <!-- Additional Notes Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <mat-icon class="section-icon">notes</mat-icon>
+          <h3>Additional Notes</h3>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Special requirements or notes (optional)</mat-label>
+          <textarea
+            matInput
+            rows="3"
+            formControlName="specialRequirements"
+            placeholder="Enter any special requirements..."
+          ></textarea>
+        </mat-form-field>
+      </div>
     </form>
   </mat-dialog-content>
 
-  <mat-dialog-actions class="dialog-actions">
-    <button mat-button (click)="close()" type="button" class="btn-cancel">Cancel</button>
+  <!-- Footer Actions -->
+  <mat-dialog-actions class="dialog-footer">
+    <button mat-button (click)="close()" class="btn-cancel">Cancel</button>
     <button
       mat-flat-button
-      color="primary"
       (click)="save()"
-      type="button"
       class="btn-submit"
-      [disabled]="form.invalid"
+      [disabled]="form.invalid || isLoading"
     >
-      {{ data?.id ? 'Update Reservation' : 'Create Reservation' }}
+      <mat-icon>{{ data?.id ? 'edit' : 'add' }}</mat-icon>
+      {{ data?.id ? 'Update' : 'Create' }} Reservation
     </button>
   </mat-dialog-actions>
 </div>

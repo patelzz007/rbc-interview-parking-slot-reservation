@@ -1,166 +1,391 @@
 .reservation-dialog {
-	mat-dialog-content {
-		padding: 0 32px 32px;
-		max-height: 70vh;
-		overflow-y: auto;
-	}
-	max-width: 800px;
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
 
-	// Title
-	h2[mat-dialog-title] {
-		padding: 32px 32px 24px;
-		margin: 0;
-		color: #111827;
-	}
+  .dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: #ffffff;
+    border-bottom: 1px solid #eef2f6;
 
-	// Section headers - minimal and clean
-	section {
-		h3 {
-			color: #6b7280;
-			margin-bottom: 24px;
-		}
-	}
+    .dialog-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: #0a1e2e;
+      letter-spacing: -0.01em;
+    }
 
-	.reservation-form {
-		.form-section {
-			margin-bottom: 2.5rem;
+    .close-btn {
+      color: #6b7a8a;
+      
+      &:hover {
+        background: #f3f6f9;
+        color: #0a1e2e;
+      }
+    }
+  }
 
-			&:last-child {
-				margin-bottom: 0;
-			}
-		}
+  .dialog-content {
+    padding: 24px;
+    background: #fafcff;
+  }
 
-		.section-title {
-			font-size: 0.75rem;
-			font-weight: 600;
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
-			color: #6b7280;
-			margin-bottom: 1.5rem;
-		}
-
-		.form-row {
-			display: grid;
-			grid-template-columns: 1fr;
-			gap: 1.25rem;
-
-			@media (min-width: 768px) {
-				grid-template-columns: repeat(2, 1fr);
-			}
-		}
-
-		.form-column {
-			display: flex;
-			flex-direction: column;
-			gap: 1.25rem;
-		}
-
-		.form-field {
-			width: 100%;
-
-			&--half {
-				@media (min-width: 768px) {
-					width: 50%;
-				}
-			}
-		}
-
-		.time-section {
-			display: flex;
-			flex-direction: column;
-			gap: 2rem;
-		}
-
-		.time-group {
-			.time-label {
-				font-size: 0.875rem;
-				font-weight: 500;
-				color: #374151;
-				margin-bottom: 1rem;
-			}
-		}
-
-		.duration-display {
-			font-size: 0.875rem;
-			color: #4b5563;
-			margin-top: 1rem;
-
-			.duration-value {
-				font-weight: 600;
-			}
-		}
-	}
-
-	// Dialog Actions - Button Styling
-	.dialog-actions {
-		display: flex;
-		justify-content: flex-end;
-		align-items: center;
-		gap: 1rem;
-		margin-top: 2rem;
-		padding: 1.5rem 1.5rem 1.5rem 1.5rem;
-		border-top: 1px solid #e5e7eb;
-
-		.btn-cancel {
-			min-width: 100px;
-			height: 44px;
-			padding: 0 2rem;
-			font-size: 0.9375rem;
-			font-weight: 500;
-			text-transform: none;
-			letter-spacing: 0.01em;
-			border-radius: 4px;
-			transition: all 0.2s ease;
-			cursor: pointer;
-
-			&:hover {
-				background-color: rgba(0, 0, 0, 0.04);
-			}
-		}
-
-		.btn-submit {
-			min-width: 180px;
-			height: 44px;
-			padding: 0 2rem;
-			font-size: 0.9375rem;
-			font-weight: 500;
-			text-transform: none;
-			letter-spacing: 0.01em;
-			border-radius: 4px;
-			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-			transition: all 0.2s ease;
-			background-color: rgb(15 23 42);
-			color: white;
-			cursor: pointer;
-
-			&:hover:not(:disabled) {
-				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-				transform: translateY(-1px);
-				color: white;
-			}
-
-			&:disabled {
-				opacity: 0.6;
-				cursor: not-allowed;
-				background-color: rgb(30 41 59);
-			}
-		}
-	}
+  .dialog-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 24px;
+    background: #ffffff;
+    border-top: 1px solid #eef2f6;
+  }
 }
 
-// Override Material Dialog padding if needed
-::ng-deep {
-	.reservation-dialog {
-		.mat-mdc-dialog-content {
-			padding: 0 1.5rem;
-			max-height: 70vh;
-			overflow-y: auto;
-		}
+.reservation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
 
-		.mat-mdc-dialog-actions {
-			padding: 0;
-			margin: 0;
-			min-height: auto;
-		}
-	}
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .section-icon {
+      color: #2563eb;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e3a5f;
+    }
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+// Time section styles
+.time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+.time-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .time-block-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1e3a5f;
+    font-weight: 500;
+    font-size: 14px;
+
+    mat-icon {
+      color: #2563eb;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .time-inputs {
+    display: flex;
+    gap: 12px;
+
+    mat-form-field {
+      flex: 1;
+    }
+  }
+}
+
+.duration-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #f0f7ff;
+  border-radius: 8px;
+  margin-top: 8px;
+
+  .duration-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1e3a5f;
+    font-weight: 500;
+
+    mat-icon {
+      color: #2563eb;
+    }
+  }
+
+  .duration-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2563eb;
+
+    .duration-unit {
+      font-size: 14px;
+      font-weight: 400;
+      color: #5e6f7e;
+      margin-left: 4px;
+    }
+  }
+}
+
+// Payment section
+.payment-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  .cost-field {
+    width: 200px;
+  }
+
+  .rate-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #f3f6f9;
+    border-radius: 20px;
+    color: #1e3a5f;
+    font-size: 14px;
+
+    mat-icon {
+      color: #2563eb;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+// Dropdown option styles
+.user-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+
+  .user-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: #e8f0fe;
+    color: #2563eb;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+  }
+
+  .user-details {
+    display: flex;
+    flex-direction: column;
+
+    .user-name {
+      font-weight: 500;
+      color: #0a1e2e;
+    }
+
+    .user-email {
+      font-size: 12px;
+      color: #5e6f7e;
+    }
+  }
+}
+
+.status-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &.active {
+    color: #2563eb;
+    mat-icon { color: #2563eb; }
+  }
+
+  &.completed {
+    color: #059669;
+    mat-icon { color: #059669; }
+  }
+
+  &.cancelled {
+    color: #dc2626;
+    mat-icon { color: #dc2626; }
+  }
+
+  &.pending {
+    color: #b45309;
+    mat-icon { color: #b45309; }
+  }
+}
+
+.lot-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+
+  .lot-name {
+    font-weight: 500;
+    color: #0a1e2e;
+  }
+
+  .lot-address {
+    font-size: 12px;
+    color: #5e6f7e;
+  }
+}
+
+.space-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+
+  mat-icon {
+    color: #2563eb;
+  }
+
+  .space-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+
+    .space-number {
+      font-weight: 500;
+      color: #0a1e2e;
+    }
+
+    .space-meta {
+      font-size: 12px;
+      color: #5e6f7e;
+    }
+  }
+
+  .available-badge {
+    padding: 4px 8px;
+    background: #dcfce7;
+    color: #059669;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+}
+
+.empty-state-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  color: #5e6f7e;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// Button styles
+.btn-cancel {
+  color: #5e6f7e;
+  font-weight: 500;
+  padding: 8px 16px;
+
+  &:hover {
+    background: #f3f6f9;
+  }
+}
+
+.btn-submit {
+  background: #2563eb;
+  color: white;
+  font-weight: 500;
+  padding: 8px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover:not([disabled]) {
+    background: #1d4ed8;
+  }
+
+  &[disabled] {
+    background: #94a3b8;
+  }
+}
+
+// Material form field overrides
+::ng-deep .mat-mdc-form-field.mat-form-field-appearance-outline {
+  .mdc-text-field--outlined {
+    --mdc-outlined-text-field-container-shape: 8px;
+  }
+}
+
+// Search dropdown panel
+::ng-deep .mat-select-panel {
+  border-radius: 8px !important;
+  margin-top: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.pl-6 {
+	padding-left: 6px;
 }
