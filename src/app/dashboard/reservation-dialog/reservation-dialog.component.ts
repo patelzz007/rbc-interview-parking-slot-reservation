@@ -38,7 +38,7 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
 	private fb = inject(FormBuilder);
 	private reservationService = inject(MockApiObservableService);
 	private destroy$ = new Subject<void>();
-public durationHours = 0;
+	public durationHours = 0;
 
 	constructor(
 		private dialogRef: MatDialogRef<ReservationDialogComponent, boolean>,
@@ -49,13 +49,10 @@ public durationHours = 0;
 	public parkingLots: ParkingLot[] = MOCK_PARKING_LOTS;
 	public allParkingSpaces: ParkingSpace[] = MOCK_PARKING_SPACES;
 	public filteredSpaces: ParkingSpace[] = [];
-
 	public isLoading = false;
+	public statuses = Object.values(ReservationStatus);
 
-	statuses = Object.values(ReservationStatus);
-
-	// ✅ typed form
-	form = this.fb.group(
+	public form = this.fb.group(
 		{
 			userId: ["", Validators.required],
 			lotId: ["", Validators.required],
@@ -71,12 +68,10 @@ public durationHours = 0;
 		{ validators: this.dateRangeValidator.bind(this) }
 	);
 
-	// ================= INIT =================
 	ngOnInit() {
 		this.setupLotChangeListener();
 		this.setupDateTimeSync();
-
-    this.setupDurationAndPrice();
+		this.setupDurationAndPrice();
 
 		if (this.data) {
 			this.patchForEdit(this.data);
@@ -101,7 +96,8 @@ public durationHours = 0;
 	public save(): void {
 		if (this.form.invalid) {
 			console.log(this.form.value);
-			this.form.markAllAsTouched(); // ⭐ MAGIC LINE
+			this.form.markAllAsTouched();
+			this.scrollToFirstError();
 			return;
 		}
 
@@ -142,12 +138,11 @@ public durationHours = 0;
 		}
 	}
 
-	public close() {
+	public close(): void {
 		this.dialogRef.close();
 	}
 
-	// ================= PATCH =================
-	private patchForEdit(reservation: Reservation) {
+	private patchForEdit(reservation: Reservation): void {
 		const checkIn = new Date(Number(reservation.checkInDateTime));
 		const checkOut = new Date(Number(reservation.checkOutDateTime));
 
@@ -167,47 +162,49 @@ public durationHours = 0;
 		this.filterSpacesByLot(reservation.lotId);
 	}
 
-	// ================= VALIDATOR =================
+	private setupDurationAndPrice(): void {
+		this.form.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => {
+			const v = this.form.value;
 
-  private setupDurationAndPrice() {
-  this.form.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => {
-    const v = this.form.value;
+			if (!v.checkInDate || !v.checkInTime || !v.checkOutDate || !v.checkOutTime) {
+				this.durationHours = 0;
+				return;
+			}
 
-    if (!v.checkInDate || !v.checkInTime || !v.checkOutDate || !v.checkOutTime) {
-      this.durationHours = 0;
-      return;
-    }
+			const start = this.combineDateAndTime(v.checkInDate, v.checkInTime);
+			const end = this.combineDateAndTime(v.checkOutDate, v.checkOutTime);
 
-    const start = this.combineDateAndTime(v.checkInDate, v.checkInTime);
-    const end = this.combineDateAndTime(v.checkOutDate, v.checkOutTime);
+			const diffMs = end.getTime() - start.getTime();
 
-    const diffMs = end.getTime() - start.getTime();
+			if (diffMs <= 0) {
+				this.durationHours = 0;
+				return;
+			}
 
-    if (diffMs <= 0) {
-      this.durationHours = 0;
-      return;
-    }
+			this.durationHours = diffMs / 1000 / 60 / 60;
 
-    this.durationHours = diffMs / 1000 / 60 / 60;
+			this.computePrice();
+		});
+	}
 
-    this.computePrice();
-  });
-}
+	private computePrice(): void {
+		const lotId = this.form.get("lotId")?.value;
+		if (!lotId || !this.durationHours) return;
 
-private computePrice() {
-  const lotId = this.form.get('lotId')?.value;
-  if (!lotId || !this.durationHours) return;
+		const lot = this.parkingLots.find((l) => l.id === lotId);
+		if (!lot) return;
 
-  const lot = this.parkingLots.find((l) => l.id === lotId);
-  if (!lot) return;
+		const total = this.durationHours * lot.pricePerHour;
 
-  const total = this.durationHours * lot.pricePerHour;
+		this.form.patchValue({ totalCost: Number(total.toFixed(2)) }, { emitEvent: false });
+	}
 
-  this.form.patchValue(
-    { totalCost: Number(total.toFixed(2)) },
-    { emitEvent: false },
-  );
-}
+	private scrollToFirstError(): void {
+		setTimeout(() => {
+			const el = document.querySelector(".ng-invalid");
+			el?.scrollIntoView({ behavior: "smooth", block: "center" });
+		});
+	}
 
 	private dateRangeValidator(group: AbstractControl): ValidationErrors | null {
 		const inDate = group.get("checkInDate");
@@ -224,7 +221,6 @@ private computePrice() {
 
 		const invalid = end.getTime() <= start.getTime();
 
-		// ⭐ CLEAR OLD ERRORS FIRST
 		[outDate, outTime].forEach((c) => {
 			if (c?.hasError("invalidDateRange")) {
 				const e = { ...c.errors };
@@ -235,17 +231,13 @@ private computePrice() {
 
 		if (!invalid) return null;
 
-		// ⭐ ADD ERROR TO CONTROLS
 		outDate?.setErrors({ ...(outDate.errors || {}), invalidDateRange: true });
 		outTime?.setErrors({ ...(outTime.errors || {}), invalidDateRange: true });
 
 		return { invalidDateRange: true };
 	}
 
-	// ================= DATE FILTER =================
-
-	// ================= LOT =================
-	private setupLotChangeListener() {
+	private setupLotChangeListener(): void {
 		this.form
 			.get("lotId")
 			?.valueChanges.pipe(takeUntil(this.destroy$))
@@ -263,13 +255,12 @@ private computePrice() {
 		this.filteredSpaces = this.allParkingSpaces.filter((s) => s.lotId === lotId);
 	}
 
-	// ================= SYNC =================
-	private setupDateTimeSync() {
+	private setupDateTimeSync(): void {
 		this.sync("checkInDate", "checkInTime", 9);
 		this.sync("checkOutDate", "checkOutTime", 17);
 	}
 
-	private sync(dateKey: string, timeKey: string, defaultHour: number) {
+	private sync(dateKey: string, timeKey: string, defaultHour: number) : void{
 		this.form
 			.get(dateKey)
 			?.valueChanges.pipe(takeUntil(this.destroy$))
@@ -294,7 +285,6 @@ private computePrice() {
 		return d;
 	}
 
-	// ================= TIME MIN =================
 	private getNow(): Date {
 		const now = new Date();
 		now.setSeconds(0, 0);
@@ -317,6 +307,4 @@ private computePrice() {
 		const date = this.form.get("checkOutDate")?.value;
 		return this.isToday(date) ? this.getNow() : null;
 	}
-
-	// ================= SAVE =================
 }
