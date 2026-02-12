@@ -1,73 +1,166 @@
 .reservation-dialog {
-	// Clean dialog styling
-	mat-dialog-content {
-		padding: 0 32px 32px;
-		max-height: 70vh;
-		overflow-y: auto;
-	}
+  mat-dialog-content {
+    padding: 0 32px 32px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  max-width: 800px;
 
-	// Title
-	h2[mat-dialog-title] {
-		padding: 32px 32px 24px;
-		margin: 0;
-		color: #111827;
-	}
+  // Title
+  h2[mat-dialog-title] {
+    padding: 32px 32px 24px;
+    margin: 0;
+    color: #111827;
+  }
 
-	// Section headers - minimal and clean
-	section {
-		h3 {
-			color: #6b7280;
-			margin-bottom: 24px;
-		}
-	}
+  // Section headers - minimal and clean
+  section {
+    h3 {
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+  }
 
-	// Form fields - consistent spacing
-	mat-form-field {
-		width: 100%;
-	}
+  .reservation-form {
+    .form-section {
+      margin-bottom: 2.5rem;
 
-	// Dialog actions - clean footer
-	mat-dialog-actions {
-		padding: 24px 32px;
-		margin: 0;
-		background: white;
-		border-top: 1px solid #e5e7eb;
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
 
-		button {
-			font-weight: 500;
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+    }
 
-			&.mat-mdc-button {
-				color: #374151;
-			}
-		}
-	}
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
 
-	// Responsive
-	@media (max-width: 768px) {
-		h2[mat-dialog-title] {
-			padding: 24px 20px 20px;
-			font-size: 1.5rem;
-		}
+      @media (min-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
 
-		mat-dialog-content {
-			padding: 0 20px 20px;
-		}
+    .form-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
 
-		mat-dialog-actions {
-			padding: 20px;
-			flex-direction: column;
+    .form-field {
+      width: 100%;
 
-			button {
-				width: 100%;
-			}
-		}
-	}
+      &--half {
+        @media (min-width: 768px) {
+          width: 50%;
+        }
+      }
+    }
+
+    .time-section {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .time-group {
+      .time-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 1rem;
+      }
+    }
+
+    .duration-display {
+      font-size: 0.875rem;
+      color: #4b5563;
+      margin-top: 1rem;
+
+      .duration-value {
+        font-weight: 600;
+      }
+    }
+  }
+
+  // Dialog Actions - Button Styling
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+
+    .btn-cancel {
+      min-width: 100px;
+      height: 44px;
+      padding: 0 2rem;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: 0.01em;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+			cursor: pointer;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.04);
+      }
+    }
+
+    .btn-submit {
+      min-width: 180px;
+      height: 44px;
+      padding: 0 2rem;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: 0.01em;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease;
+      background-color: rgb(15 23 42);
+      color: white;
+			cursor: pointer;
+
+      &:hover:not(:disabled) {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        transform: translateY(-1px);
+        color: white;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background-color: rgb(30 41 59);
+      }
+    }
+  }
 }
 
-// Remove any default Material gradients or shadows
-.mat-mdc-dialog-container {
-	--mdc-dialog-container-elevation: 0;
-	box-shadow:
-		0 10px 25px -5px rgba(0, 0, 0, 0.1),
-		0 8px 10px -6px rgba(0, 0, 0, 0.1);
+// Override Material Dialog padding if needed
+::ng-deep {
+  .reservation-dialog {
+    .mat-mdc-dialog-content {
+      padding: 0 1.5rem;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .mat-mdc-dialog-actions {
+      padding: 0;
+      margin: 0;
+      min-height: auto;
+    }
+  }
 }
