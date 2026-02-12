@@ -260,10 +260,8 @@ export class ReservationDialogComponent implements OnInit, OnDestroy {
 		this.sync("checkOutDate", "checkOutTime", 17);
 	}
 
-	private sync(dateKey: string, timeKey: string, defaultHour: number) : void{
-		this.form
-			.get(dateKey)
-			?.valueChanges.pipe(takeUntil(this.destroy$))
+	private sync(dateKey: string, timeKey: string, defaultHour: number): void {
+		this.form.get(dateKey)?.valueChanges.pipe(takeUntil(this.destroy$))
 			.subscribe((date: Date | null) => {
 				if (!date) return;
 
