@@ -1,16 +1,7 @@
 import { Injectable, signal } from "@angular/core";
 import { Observable, of, throwError } from "rxjs";
 import { delay } from "rxjs/operators";
-import {
-	ParkingLot,
-	ParkingSpace,
-	Reservation,
-	User,
-	CreateReservationDto,
-	UpdateReservationDto,
-	SpaceStatus,
-	ReservationStatus,
-} from "../models/parking.models";
+import { ParkingLot, ParkingSpace, Reservation, User, CreateReservationDto, UpdateReservationDto, SpaceStatus, ReservationStatus } from "../models/parking.models";
 import { MOCK_PARKING_LOTS } from "../data/mock-parking-lots";
 import { MOCK_PARKING_SPACES } from "../data/mock-parking-spaces";
 import { MOCK_USERS } from "../data/mock-users";
@@ -120,11 +111,7 @@ export class MockApiObservableService {
 			updatedAt: now,
 		};
 
-		this._reservations.update((reservations) => [
-			...reservations.slice(0, index),
-			updated,
-			...reservations.slice(index + 1),
-		]);
+		this._reservations.update((reservations) => [...reservations.slice(0, index), updated, ...reservations.slice(index + 1)]);
 
 		// Update space statuses if space changed
 		if (dto.spaceId && dto.spaceId !== existing.spaceId) {
@@ -186,9 +173,7 @@ export class MockApiObservableService {
 	 * Private helper: Update space status
 	 */
 	private updateSpaceStatus(spaceId: string, status: SpaceStatus): void {
-		this._parkingSpaces.update((spaces) =>
-			spaces.map((s) => (s.id === spaceId ? { ...s, status, updatedAt: new Date().toISOString() } : s))
-		);
+		this._parkingSpaces.update((spaces) => spaces.map((s) => (s.id === spaceId ? { ...s, status, updatedAt: new Date().toISOString() } : s)));
 	}
 
 	/**

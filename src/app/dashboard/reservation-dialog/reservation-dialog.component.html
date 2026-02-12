@@ -1,106 +1,124 @@
 <div class="reservation-dialog">
-	<h2 mat-dialog-title class="text-2xl font-semibold mb-6">
-		{{ data?.id ? "Edit Reservation" : "Create Reservation" }}
-	</h2>
+  <h2 mat-dialog-title class="text-2xl font-semibold mb-6">
+    {{ data?.id ? 'Edit Reservation' : 'Create Reservation' }}
+  </h2>
 
-	<mat-dialog-content>
-		<form [formGroup]="form" class="space-y-10">
-			<!-- BASIC INFORMATION -->
-			<section>
-				<h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-6">Basic Information</h3>
+  <mat-dialog-content>
+    <form [formGroup]="form" class="space-y-10">
+      <!-- BASIC INFORMATION -->
+      <section>
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-6">
+          Basic Information
+        </h3>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-					<mat-form-field appearance="outline" class="w-full">
-						<mat-label>User ID</mat-label>
-						<input matInput formControlName="userId" placeholder="Enter user ID" />
-						<mat-error *ngIf="form.get('userId')?.hasError('required')"> User ID is required </mat-error>
-					</mat-form-field>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>User</mat-label>
+            <mat-select formControlName="userId">
+              <mat-option *ngFor="let u of users" [value]="u.id">
+                {{ u.firstName }} {{ u.lastName }}
+              </mat-option>
+            </mat-select>
 
-					<mat-form-field appearance="outline" class="w-full">
-						<mat-label>Status</mat-label>
-						<mat-select formControlName="status">
-							<mat-option *ngFor="let s of statuses" [value]="s">
-								{{ s }}
-							</mat-option>
-						</mat-select>
-					</mat-form-field>
-				</div>
-			</section>
+            <mat-error *ngIf="form.get('userId')?.hasError('required')">
+              User is required
+            </mat-error>
+          </mat-form-field>
 
-			<!-- PARKING DETAILS -->
-			<section>
-				<h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-6">Parking Details</h3>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              <mat-option *ngFor="let s of statuses" [value]="s">
+                {{ s }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </section>
 
-				<div class="space-y-5">
-					<mat-form-field appearance="outline" class="w-full">
-						<mat-label>Parking Lot</mat-label>
-						<mat-select formControlName="lotId">
-							<mat-option *ngFor="let lot of parkingLots" [value]="lot.id">
-								{{ lot.name }} · {{ lot.address }}
-							</mat-option>
-						</mat-select>
-						<mat-hint>Select the parking lot location</mat-hint>
-						<mat-error *ngIf="form.get('lotId')?.hasError('required')"> Parking lot is required </mat-error>
-					</mat-form-field>
+      <!-- PARKING DETAILS -->
+      <section>
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-6">
+          Parking Details
+        </h3>
 
-					<mat-form-field appearance="outline" class="w-full">
-						<mat-label>Parking Space</mat-label>
-						<mat-select formControlName="spaceId" [disabled]="!form.get('lotId')?.value">
-							<mat-option *ngIf="filteredSpaces.length === 0" disabled>
-								{{ form.get("lotId")?.value ? "No spaces available" : "Select a lot first" }}
-							</mat-option>
-							<mat-option *ngFor="let space of filteredSpaces" [value]="space.id">
-								Space {{ space.spaceNumber }} · Level {{ space.level }} · {{ space.type }}
-							</mat-option>
-						</mat-select>
-						<mat-hint *ngIf="form.get('lotId')?.value && filteredSpaces.length > 0">
-							{{ filteredSpaces.length }} space(s) available
-						</mat-hint>
-						<mat-error *ngIf="form.get('spaceId')?.hasError('required')"> Parking space is required </mat-error>
-					</mat-form-field>
-				</div>
-			</section>
+        <div class="space-y-5">
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Parking Lot</mat-label>
+            <mat-select formControlName="lotId">
+              <mat-option *ngFor="let lot of parkingLots" [value]="lot.id">
+                {{ lot.name }} · {{ lot.address }}
+              </mat-option>
+            </mat-select>
+            <mat-hint>Select the parking lot location</mat-hint>
+            <mat-error *ngIf="form.get('lotId')?.hasError('required')">
+              Parking lot is required
+            </mat-error>
+          </mat-form-field>
 
-			<!-- RESERVATION TIME -->
-			<section>
-				<h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-6">Reservation Time</h3>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Parking Space</mat-label>
+            <mat-select formControlName="spaceId" [disabled]="!form.get('lotId')?.value">
+              <mat-option *ngIf="filteredSpaces.length === 0" disabled>
+                {{ form.get('lotId')?.value ? 'No spaces available' : 'Select a lot first' }}
+              </mat-option>
+              <mat-option *ngFor="let space of filteredSpaces" [value]="space.id">
+                Space {{ space.spaceNumber }} · Level {{ space.level }} · {{ space.type }}
+              </mat-option>
+            </mat-select>
+            <mat-hint *ngIf="form.get('lotId')?.value && filteredSpaces.length > 0">
+              {{ filteredSpaces.length }} space(s) available
+            </mat-hint>
+            <mat-error *ngIf="form.get('spaceId')?.hasError('required')">
+              Parking space is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </section>
 
-				<div class="space-y-8">
-					<!-- Check In -->
-					<div>
-						<div class="text-sm font-medium text-gray-700 mb-4">Check In</div>
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-							<mat-form-field appearance="outline" class="w-full">
-								<mat-label>Date</mat-label>
-								<input matInput [matDatepicker]="checkInPicker" formControlName="checkInDate" />
-								<mat-datepicker-toggle matIconSuffix [for]="checkInPicker"></mat-datepicker-toggle>
-								<mat-datepicker #checkInPicker></mat-datepicker>
-								<mat-error *ngIf="form.get('checkInDate')?.hasError('required')">
-									Check-in date is required
-								</mat-error>
-							</mat-form-field>
+      <!-- RESERVATION TIME -->
+      <section>
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-6">
+          Reservation Time
+        </h3>
 
-							<mat-form-field appearance="outline" class="w-full">
-								<mat-label>Time</mat-label>
-								<input
-									matInput
-									[matTimepicker]="checkInTimePicker"
-									[min]="checkInMinTime"
-									formControlName="checkInTime" />
-								<mat-timepicker-toggle matIconSuffix [for]="checkInTimePicker" />
-								<mat-timepicker #checkInTimePicker />
-								<mat-error *ngIf="form.get('checkInTime')?.hasError('required')">
-									Check-in time is required
-								</mat-error>
-							</mat-form-field>
-						</div>
-					</div>
+        <div class="space-y-8">
+          <!-- Check In -->
+          <div>
+            <div class="text-sm font-medium text-gray-700 mb-4">Check In</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Date</mat-label>
+                <input matInput [matDatepicker]="checkInPicker" formControlName="checkInDate" />
+                <mat-datepicker-toggle matIconSuffix [for]="checkInPicker"></mat-datepicker-toggle>
+                <mat-datepicker #checkInPicker></mat-datepicker>
+                <mat-error *ngIf="form.get('checkInDate')?.hasError('required')">
+                  Check-in date is required
+                </mat-error>
+              </mat-form-field>
 
-					<!-- Check Out -->
-					<div>
-						<div class="text-sm font-medium text-gray-700 mb-4">Check Out</div>
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-							<!-- <mat-form-field appearance="outline" class="w-full">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Time</mat-label>
+                <input
+                  matInput
+                  [matTimepicker]="checkInTimePicker"
+                  [min]="checkInMinTime"
+                  formControlName="checkInTime"
+                />
+                <mat-timepicker-toggle matIconSuffix [for]="checkInTimePicker" />
+                <mat-timepicker #checkInTimePicker />
+                <mat-error *ngIf="form.get('checkInTime')?.hasError('required')">
+                  Check-in time is required
+                </mat-error>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <!-- Check Out -->
+          <div>
+            <div class="text-sm font-medium text-gray-700 mb-4">Check Out</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <!-- <mat-form-field appearance="outline" class="w-full">
                 <mat-label>Date</mat-label>
                 <input matInput [matDatepicker]="checkOutPicker" formControlName="checkOutDate" />
                 <mat-datepicker-toggle matIconSuffix [for]="checkOutPicker"></mat-datepicker-toggle>
@@ -110,27 +128,28 @@
                 </mat-error>
               </mat-form-field> -->
 
-							<mat-form-field appearance="outline" class="w-full">
-								<mat-label>Date</mat-label>
-								<input
-									matInput
-									[matDatepicker]="checkOutPicker"
-									formControlName="checkOutDate"
-									[matDatepickerFilter]="endDateFilter" />
-								<mat-datepicker-toggle matIconSuffix [for]="checkOutPicker"></mat-datepicker-toggle>
-								<mat-datepicker #checkOutPicker></mat-datepicker>
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Date</mat-label>
+                <input
+                  matInput
+                  [matDatepicker]="checkOutPicker"
+                  formControlName="checkOutDate"
+                  [matDatepickerFilter]="endDateFilter"
+                />
+                <mat-datepicker-toggle matIconSuffix [for]="checkOutPicker"></mat-datepicker-toggle>
+                <mat-datepicker #checkOutPicker></mat-datepicker>
 
-								<mat-error *ngIf="form.get('checkOutDate')?.hasError('required')">
-									Check-out date is required
-								</mat-error>
+                <mat-error *ngIf="form.get('checkOutDate')?.hasError('required')">
+                  Check-out date is required
+                </mat-error>
 
-								<!-- ⭐ RANGE ERROR -->
-								<mat-error *ngIf="form.get('checkOutDate')?.hasError('invalidDateRange')">
-									Check-out must be later than check-in
-								</mat-error>
-							</mat-form-field>
+                <!-- ⭐ RANGE ERROR -->
+                <mat-error *ngIf="form.get('checkOutDate')?.hasError('invalidDateRange')">
+                  Check-out must be later than check-in
+                </mat-error>
+              </mat-form-field>
 
-							<!-- <mat-form-field appearance="outline" class="w-full">
+              <!-- <mat-form-field appearance="outline" class="w-full">
                 <mat-label>Time</mat-label>
                 <input
                   matInput
@@ -144,70 +163,87 @@
                 </mat-error>
               </mat-form-field> -->
 
-							<mat-form-field appearance="outline" class="w-full">
-								<mat-label>Time</mat-label>
-								<input
-									matInput
-									[matTimepicker]="checkOutTimePicker"
-									formControlName="checkOutTime"
-									[min]="checkOutMinTime" />
-								<mat-timepicker-toggle matIconSuffix [for]="checkOutTimePicker" />
-								<mat-timepicker #checkOutTimePicker />
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Time</mat-label>
+                <input
+                  matInput
+                  [matTimepicker]="checkOutTimePicker"
+                  formControlName="checkOutTime"
+                  [min]="checkOutMinTime"
+                />
+                <mat-timepicker-toggle matIconSuffix [for]="checkOutTimePicker" />
+                <mat-timepicker #checkOutTimePicker />
 
-								<mat-error *ngIf="form.get('checkOutTime')?.hasError('required')">
-									Check-out time is required
-								</mat-error>
+                <mat-error *ngIf="form.get('checkOutTime')?.hasError('required')">
+                  Check-out time is required
+                </mat-error>
 
-								<!-- ⭐ RANGE ERROR -->
-								<mat-error *ngIf="form.get('checkOutTime')?.hasError('invalidDateRange')">
-									Check-out must be later than check-in
-								</mat-error>
-							</mat-form-field>
-						</div>
-					</div>
-				</div>
-			</section>
+                <!-- ⭐ RANGE ERROR -->
+                <mat-error *ngIf="form.get('checkOutTime')?.hasError('invalidDateRange')">
+                  Check-out must be later than check-in
+                </mat-error>
+              </mat-form-field>
+            </div>
+          </div>
+        </div>
 
-			<!-- PAYMENT -->
-			<section>
-				<h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-6">Payment</h3>
+        <div class="text-sm text-gray-600">
+          Duration:
+          <span class="font-semibold"> {{ durationHours | number: '1.0-2' }} hour(s) </span>
+        </div>
+      </section>
 
-				<div>
-					<mat-form-field appearance="outline" class="w-full md:w-1/2">
-						<mat-label>Total Cost</mat-label>
-						<span matTextPrefix>$&nbsp;</span>
-						<input matInput type="number" formControlName="totalCost" placeholder="0.00" />
-						<mat-error *ngIf="form.get('totalCost')?.hasError('required')"> Total cost is required </mat-error>
-						@if (form.get("totalCost")?.hasError("min")) {
-							<mat-error> Total cost must be at least 0 </mat-error>
-						}
-					</mat-form-field>
-				</div>
-			</section>
+      <!-- PAYMENT -->
+      <section>
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-6">Payment</h3>
 
-			<!-- ADDITIONAL NOTES -->
-			<section>
-				<h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-6">Additional Notes</h3>
+        <div>
+          <mat-form-field appearance="outline" class="w-full md:w-1/2">
+            <mat-label>Total Cost</mat-label>
+            <span matTextPrefix>$&nbsp;</span>
+            <input matInput type="number" formControlName="totalCost" placeholder="0.00" />
+            <mat-error *ngIf="form.get('totalCost')?.hasError('required')">
+              Total cost is required
+            </mat-error>
+            @if (form.get('totalCost')?.hasError('min')) {
+              <mat-error> Total cost must be at least 0 </mat-error>
+            }
+          </mat-form-field>
+        </div>
+      </section>
 
-				<div>
-					<mat-form-field appearance="outline" class="w-full">
-						<mat-label>Special Requirements</mat-label>
-						<textarea
-							matInput
-							rows="4"
-							formControlName="specialRequirements"
-							placeholder="Enter any special requirements (optional)">
-						</textarea>
-					</mat-form-field>
-				</div>
-			</section>
-		</form>
-	</mat-dialog-content>
+      <!-- ADDITIONAL NOTES -->
+      <section>
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-6">
+          Additional Notes
+        </h3>
 
-	<mat-dialog-actions class="flex justify-end gap-4 mt-8">
-		<button mat-button (click)="close()" class="px-8 h-11">Cancel</button>
-		<button mat-flat-button color="primary" (click)="save()" class="px-8 h-11" [disabled]="form.invalid">
-			{{ data?.id ? "Update Reservation" : "Create Reservation" }}
-		</button>
-	</mat-dialog-actions>
+        <div>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Special Requirements</mat-label>
+            <textarea
+              matInput
+              rows="4"
+              formControlName="specialRequirements"
+              placeholder="Enter any special requirements (optional)"
+            >
+            </textarea>
+          </mat-form-field>
+        </div>
+      </section>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="flex justify-end gap-4 mt-8">
+    <button mat-button (click)="close()" class="px-8 h-11">Cancel</button>
+    <button
+      mat-flat-button
+      color="primary"
+      (click)="save()"
+      class="px-8 h-11"
+      [disabled]="form.invalid"
+    >
+      {{ data?.id ? 'Update Reservation' : 'Create Reservation' }}
+    </button>
+  </mat-dialog-actions>
 </div>

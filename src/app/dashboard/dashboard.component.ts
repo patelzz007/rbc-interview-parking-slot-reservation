@@ -38,16 +38,7 @@ export class DashboardComponent {
 	protected parkingLots$ = this.api.getParkingLots();
 	protected users$ = this.api.getUsers();
 
-	protected readonly displayedColumns = [
-		"id",
-		"userName",
-		"lotName",
-		"spaceNumber",
-		"checkInDateTime",
-		"checkOutDateTime",
-		"status",
-		"actions",
-	];
+	protected readonly displayedColumns = ["id", "userName", "lotName", "spaceNumber", "checkInDateTime", "checkOutDateTime", "status", "actions"];
 
 	public openCreate(): void {
 		const dialogRef = this.dialog.open(ReservationDialogComponent, {

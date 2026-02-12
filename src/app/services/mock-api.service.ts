@@ -2,16 +2,7 @@ import { Injectable, signal, computed, Signal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { Observable, of, throwError } from "rxjs";
 import { delay } from "rxjs/operators";
-import {
-	ParkingLot,
-	ParkingSpace,
-	Reservation,
-	User,
-	CreateReservationDto,
-	UpdateReservationDto,
-	SpaceStatus,
-	ReservationStatus,
-} from "../models/parking.models";
+import { ParkingLot, ParkingSpace, Reservation, User, CreateReservationDto, UpdateReservationDto, SpaceStatus, ReservationStatus } from "../models/parking.models";
 import { MOCK_PARKING_LOTS } from "../data/mock-parking-lots";
 import { MOCK_PARKING_SPACES } from "../data/mock-parking-spaces";
 import { MOCK_USERS } from "../data/mock-users";
@@ -43,9 +34,7 @@ export class MockApiService {
 
 	// Computed signals for derived state
 	readonly parkingLotsCount = computed(() => this._parkingLots().length);
-	readonly activeReservationsCount = computed(
-		() => this._reservations().filter((r) => r.status === ReservationStatus.ACTIVE).length
-	);
+	readonly activeReservationsCount = computed(() => this._reservations().filter((r) => r.status === ReservationStatus.ACTIVE).length);
 
 	/**
 	 * Get all reservations
@@ -60,9 +49,7 @@ export class MockApiService {
 	getReservation(id: string): Signal<Reservation | undefined> {
 		const reservation = this.reservations().find((r) => r.id === id);
 		if (!reservation) {
-			return toSignal(
-				throwError(() => new Error(`Reservation with id ${id} not found`)).pipe(delay(this.API_DELAY))
-			);
+			return toSignal(throwError(() => new Error(`Reservation with id ${id} not found`)).pipe(delay(this.API_DELAY)));
 		}
 		return toSignal(of({ ...reservation }).pipe(delay(this.API_DELAY)));
 	}
@@ -79,9 +66,7 @@ export class MockApiService {
 		// Get lot to calculate cost
 		const lot = this.parkingLots().find((l) => l.id === dto.lotId);
 		if (!lot) {
-			return toSignal(
-				throwError(() => new Error(`Parking lot with id ${dto.lotId} not found`)).pipe(delay(this.API_DELAY))
-			);
+			return toSignal(throwError(() => new Error(`Parking lot with id ${dto.lotId} not found`)).pipe(delay(this.API_DELAY)));
 		}
 
 		const newReservation: Reservation = {
@@ -112,9 +97,7 @@ export class MockApiService {
 	updateReservation(id: string, dto: UpdateReservationDto): Signal<Reservation | undefined> {
 		const index = this._reservations().findIndex((r) => r.id === id);
 		if (index === -1) {
-			return toSignal(
-				throwError(() => new Error(`Reservation with id ${id} not found`)).pipe(delay(this.API_DELAY))
-			);
+			return toSignal(throwError(() => new Error(`Reservation with id ${id} not found`)).pipe(delay(this.API_DELAY)));
 		}
 
 		const existing = this._reservations()[index];
@@ -139,11 +122,7 @@ export class MockApiService {
 			updatedAt: now,
 		};
 
-		this._reservations.update((reservations) => [
-			...reservations.slice(0, index),
-			updated,
-			...reservations.slice(index + 1),
-		]);
+		this._reservations.update((reservations) => [...reservations.slice(0, index), updated, ...reservations.slice(index + 1)]);
 
 		// Update space statuses if space changed
 		if (dto.spaceId && dto.spaceId !== existing.spaceId) {
@@ -160,9 +139,7 @@ export class MockApiService {
 	deleteReservation(id: string): Signal<void> {
 		const reservation = this._reservations().find((r) => r.id === id);
 		if (!reservation) {
-			return toSignal(
-				throwError(() => new Error(`Reservation with id ${id} not found`)).pipe(delay(this.API_DELAY))
-			);
+			return toSignal(throwError(() => new Error(`Reservation with id ${id} not found`)).pipe(delay(this.API_DELAY)));
 		}
 
 		this._reservations.update((reservations) => reservations.filter((r) => r.id !== id));
@@ -207,9 +184,7 @@ export class MockApiService {
 	 * Private helper: Update space status
 	 */
 	private updateSpaceStatus(spaceId: string, status: SpaceStatus): void {
-		this._parkingSpaces.update((spaces) =>
-			spaces.map((s) => (s.id === spaceId ? { ...s, status, updatedAt: new Date().toISOString() } : s))
-		);
+		this._parkingSpaces.update((spaces) => spaces.map((s) => (s.id === spaceId ? { ...s, status, updatedAt: new Date().toISOString() } : s)));
 	}
 
 	/**
